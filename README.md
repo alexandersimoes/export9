@@ -6,14 +6,15 @@ A real-time multiplayer game where players compete by guessing which countries h
 
 - 2 players per game
 - **Both players get the same 10 randomly chosen country cards** for fair competition
-- 9 rounds total, each with a different product (cars, phones, chocolate, etc.)
+- 9 rounds total, each with a different product (cars, phones, crude oil, etc.)
+- **Real export data from OEC API** - actual 2023 trade statistics used for scoring
 - **20-second timer** per round - players must submit their choice before time runs out
 - Players can **change their selection** as many times as they want before submitting
 - **Auto-submit** if time expires (uses selected card, or first card if none selected)
 - **Once played, cards are permanently removed** - players lose that country for remaining rounds
 - Winner of each round gets 1 point
 - **Ties are possible** - if both players choose the same country, both get 1 point
-- **Round results shown with 5-second timer** displaying export values and winner/tie
+- **Round results show real export values** in billions USD with 5-second timer
 - Player with the most points after 9 rounds wins
 
 ## Tech Stack
@@ -29,6 +30,8 @@ A real-time multiplayer game where players compete by guessing which countries h
 - **Socket.IO** for real-time websocket communication
 - **Python** with async/await support
 - **Pydantic** for data validation
+- **OEC API Integration** for real-time export data
+- **aiohttp** for async HTTP requests
 
 ## Getting Started
 
@@ -55,12 +58,19 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Run the development server:
+4. Test the OEC API integration:
+```bash
+python test_oec.py
+```
+
+5. Run the development server:
 ```bash
 python main.py
 ```
 
 The backend will be available at `http://localhost:8000`
+- Health check: `http://localhost:8000/health`
+- OEC API test: `http://localhost:8000/test-oec`
 
 ### Frontend Setup
 

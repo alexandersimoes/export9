@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { GameState, GameStatus, Card } from '@/types/game'
 import RoundResultModal from './RoundResultModal'
+import { getFlagEmoji } from '@/lib/utils'
 
 interface GameBoardProps {
   gameState: GameState
@@ -39,9 +40,16 @@ export default function GameBoard({
 
   const handleSubmitCard = () => {
     if (selectedCard && !hasSubmitted) {
-      onPlayCard(selectedCard)
-      setHasSubmitted(true)
-      setSelectedCard(null)
+      // Verify the card is still available before submitting
+      const cardExists = gameState.your_cards.some(card => card.country_code === selectedCard)
+      if (cardExists) {
+        onPlayCard(selectedCard)
+        setHasSubmitted(true)
+        setSelectedCard(null)
+      } else {
+        console.warn(`Selected card ${selectedCard} no longer available, clearing selection`)
+        setSelectedCard(null)
+      }
     }
   }
 
@@ -51,10 +59,13 @@ export default function GameBoard({
     // Auto-submit the selected card if it's still valid, or first available card
     let cardToPlay = null
     
+    // Double-check that the selected card is still available and valid
     if (selectedCard && gameState.your_cards.some(card => card.country_code === selectedCard)) {
       cardToPlay = selectedCard
     } else if (gameState.your_cards.length > 0) {
+      // If selected card is not valid, use the first available card
       cardToPlay = gameState.your_cards[0].country_code
+      console.log(`Selected card ${selectedCard} no longer valid, auto-submitting first available: ${cardToPlay}`)
     }
     
     if (cardToPlay) {
@@ -380,13 +391,3 @@ export default function GameBoard({
   )
 }
 
-// Helper function to get flag emoji (simplified)
-function getFlagEmoji(countryCode: string): string {
-  const flags: Record<string, string> = {
-    'CN': '🇨🇳', 'US': '🇺🇸', 'DE': '🇩🇪', 'JP': '🇯🇵', 'UK': '🇬🇧',
-    'FR': '🇫🇷', 'KR': '🇰🇷', 'IT': '🇮🇹', 'CA': '🇨🇦', 'ES': '🇪🇸',
-    'IN': '🇮🇳', 'NL': '🇳🇱', 'BR': '🇧🇷', 'CH': '🇨🇭', 'AU': '🇦🇺',
-    'IE': '🇮🇪', 'MX': '🇲🇽', 'RU': '🇷🇺', 'TH': '🇹🇭', 'MY': '🇲🇾'
-  }
-  return flags[countryCode] || '🏳️'
-}

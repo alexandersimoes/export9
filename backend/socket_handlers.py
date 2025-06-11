@@ -265,7 +265,7 @@ async def resolve_round(sio: socketio.AsyncServer, game_manager: GameManager, ga
     
     # Calculate export values for each played card
     for player_id, card in current_round.player_cards.items():
-        export_value = game_manager.get_export_value(card.country.code, current_round.product.id)
+        export_value = await game_manager.get_export_value(card.country.code, current_round.product.id)
         current_round.export_data[card.country.code] = export_value
     
     # Determine winner(s) - handle ties when both players pick same country

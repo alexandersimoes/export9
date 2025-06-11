@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { RoundResult } from '@/types/game'
+import { formatExportValue } from '@/lib/utils'
 
 interface RoundResultModalProps {
   roundResult: RoundResult | null
@@ -94,7 +95,7 @@ export default function RoundResultModal({ roundResult, playerName }: RoundResul
                   <div className="text-right">
                     {player.card_played && (
                       <div className="text-lg font-bold text-blue-600">
-                        ${player.card_played.export_value.toFixed(1)}B
+                        {formatExportValue(player.card_played.export_value)}
                       </div>
                     )}
                     <div className="text-xs text-gray-500">exports</div>

@@ -5,6 +5,11 @@ import uuid
 import asyncio
 import time
 import random
+import logging
+
+from oec_client import oec_client, OECCountry, OECProduct
+
+logger = logging.getLogger(__name__)
 
 class GameState(Enum):
     WAITING = "waiting"
@@ -20,12 +25,14 @@ class PlayerState(Enum):
 class Country:
     code: str
     name: str
+    oec_id: str  # OEC API identifier
     
 @dataclass 
 class Product:
     id: str
     name: str
     category: str
+    oec_id: str  # OEC API identifier
     
 @dataclass
 class ExportData:
@@ -94,77 +101,82 @@ class GameManager:
         self.games: Dict[str, Game] = {}
         self.waiting_players: List[Player] = []
         self.player_game_map: Dict[str, str] = {}  # player_id -> game_id
-        self.export_data: List[ExportData] = []
         self.countries: List[Country] = []
         self.products: List[Product] = []
+        # Note: Export data is now managed by ExportDataManager
+        # self.cached_export_data removed - using global data manager
         
         # Initialize game data
         self._initialize_countries()
         self._initialize_products()
-        self._initialize_export_data()
         
     def _initialize_countries(self):
-        """Initialize list of countries"""
+        """Initialize list of countries with OEC mappings"""
         countries_data = [
-            ("CN", "China"), ("US", "United States"), ("DE", "Germany"),
-            ("JP", "Japan"), ("UK", "United Kingdom"), ("FR", "France"),
-            ("KR", "South Korea"), ("IT", "Italy"), ("CA", "Canada"),
-            ("ES", "Spain"), ("IN", "India"), ("NL", "Netherlands"),
-            ("BR", "Brazil"), ("CH", "Switzerland"), ("AU", "Australia"),
-            ("IE", "Ireland"), ("MX", "Mexico"), ("RU", "Russia"),
-            ("TH", "Thailand"), ("MY", "Malaysia")
+            ("CN", "China", "aschn"),
+            ("US", "United States", "nausa"),
+            ("DE", "Germany", "eudeu"),
+            ("JP", "Japan", "asjpn"),
+            ("GB", "United Kingdom", "eugbr"),
+            ("FR", "France", "eufra"),
+            ("KR", "South Korea", "askor"),
+            ("IT", "Italy", "euita"),
+            ("CA", "Canada", "nacan"),
+            ("ES", "Spain", "euesp"),
+            ("IN", "India", "asind"),
+            ("NL", "Netherlands", "eunld"),
+            ("SA", "Saudi Arabia", "sabra"),
+            ("CH", "Switzerland", "euche"),
+            ("AU", "Australia", "ocaus"),
+            ("IE", "Ireland", "euirl"),
+            ("MX", "Mexico", "namex"),
+            ("RU", "Russia", "eurus"),
+            ("TH", "Thailand", "astha"),
+            ("MY", "Malaysia", "asmys")
         ]
-        self.countries = [Country(code=code, name=name) for code, name in countries_data]
+        self.countries = [Country(code=code, name=name, oec_id=oec_id) 
+                         for code, name, oec_id in countries_data]
         
     def _initialize_products(self):
-        """Initialize list of products"""
+        """Initialize list of products with OEC mappings"""
         products_data = [
-            ("cars", "Cars", "automotive"),
-            ("phones", "Mobile Phones", "electronics"),
-            ("chocolate", "Chocolate", "food"),
-            ("medicine", "Pharmaceuticals", "healthcare"),
-            ("coffee", "Coffee", "food"),
-            ("wine", "Wine", "beverages"),
-            ("computers", "Computers", "electronics"),
-            ("oil", "Crude Oil", "energy"),
-            ("rice", "Rice", "food"),
-            ("steel", "Steel", "materials")
+            ("cars", "Cars", "automotive", "178703"),
+            ("phones", "Telephones", "electronics", "168517"),
+            ("medicine", "Packaged Medicaments", "healthcare", "63004"),
+            ("coffee", "Coffee", "beverages", "20901"),
+            ("wine", "Wine", "beverages", "42204"),
+            ("computers", "Computers", "electronics", "168471"),
+            ("oil", "Crude Petroleum", "energy", "52709"),
+            ("circuits", "Integrated Circuits", "electronics", "168542"),
+            ("gas", "Petroleum Gas", "energy", "52711"),
+            ("cheese", "Cheese", "food", "10406"),
+            ("beer", "Beer", "beverages", "42203"),
+            ("tires", "Rubber Tires", "automotive", "74011"),
+            ("soybeans", "Soybeans", "agriculture", "21201"),
+            ("sugar", "Raw Sugar", "food", "41701"),
+            ("liquor", "Hard Liquor", "beverages", "42208"),
+            ("refined_oil", "Refined Petroleum", "energy", "52710"),
+            ("auto_parts", "Motor Vehicle Parts", "automotive", "178708"),
+            ("drones", "Drones", "electronics", "178806")
         ]
-        self.products = [Product(id=id, name=name, category=category) 
-                        for id, name, category in products_data]
+        self.products = [Product(id=id, name=name, category=category, oec_id=oec_id) 
+                        for id, name, category, oec_id in products_data]
         
-    def _initialize_export_data(self):
-        """Initialize export data with realistic values"""
-        # Simplified - in production, this would come from a real database
-        for product in self.products:
-            for country in self.countries:
-                # Generate semi-realistic export values based on country/product combinations
-                base_value = random.uniform(0.1, 50.0)  # billions USD
-                
-                # Add some realism - certain countries excel at certain products
-                multipliers = {
-                    ("CN", "phones"): 3.0, ("CN", "computers"): 2.5,
-                    ("DE", "cars"): 4.0, ("JP", "cars"): 3.0,
-                    ("CH", "chocolate"): 2.0, ("US", "medicine"): 3.0,
-                    ("BR", "coffee"): 4.0, ("FR", "wine"): 3.0,
-                    ("RU", "oil"): 5.0, ("TH", "rice"): 3.0,
-                    ("IN", "medicine"): 2.0, ("KR", "phones"): 2.5
-                }
-                
-                multiplier = multipliers.get((country.code, product.id), 1.0)
-                export_value = base_value * multiplier
-                
-                self.export_data.append(ExportData(
-                    country_code=country.code,
-                    product_id=product.id,
-                    export_value=export_value
-                ))
-    
-    def get_export_value(self, country_code: str, product_id: str) -> float:
+    async def get_export_value(self, country_code: str, product_id: str) -> float:
         """Get export value for a country-product combination"""
-        data = next((ed for ed in self.export_data 
-                    if ed.country_code == country_code and ed.product_id == product_id), None)
-        return data.export_value if data else 0.0
+        # Import here to avoid circular imports
+        from data_manager import export_data_manager
+        
+        # Find country and product to get OEC IDs
+        country = next((c for c in self.countries if c.code == country_code), None)
+        product = next((p for p in self.products if p.id == product_id), None)
+        
+        if not country or not product:
+            return 0.0
+        
+        # Get data from the global data manager
+        product_data = await export_data_manager.get_export_data(product.oec_id)
+        return product_data.get(country.oec_id, 0.0)
         
     def create_game(self) -> Game:
         """Create a new game"""
@@ -217,6 +229,8 @@ class GameManager:
         
         # Create 9 rounds with random products
         products = random.sample(self.products, 9)
+        
+        # No need to preload - data manager handles this globally
         for i, product in enumerate(products):
             round_data = GameRound(round_number=i + 1, product=product)
             game.rounds.append(round_data)
