@@ -21,11 +21,76 @@
     @apply bg-white shadow-lg rounded-lg p-6 border border-gray-200;
   }
   
-  .game-card {
-    @apply bg-gradient-to-br from-blue-50 to-indigo-100 border-2 border-blue-200 rounded-xl p-4 hover:shadow-lg transition-all cursor-pointer;
+  .playing-card {
+    @apply relative bg-white border border-gray-300 cursor-pointer transition-all duration-300 ease-in-out;
+    width: 80px;
+    height: 112px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.2);
+    transform-style: preserve-3d;
   }
   
-  .game-card.selected {
-    @apply border-game-primary bg-blue-100;
+  .playing-card:hover {
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25), 0 4px 10px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+  }
+  
+  .playing-card.selected {
+    @apply border-2 border-blue-500 bg-blue-50;
+    transform: translateY(-12px) scale(1.08);
+    box-shadow: 0 12px 30px rgba(59, 130, 246, 0.3), 0 6px 15px rgba(59, 130, 246, 0.2);
+    z-index: 20;
+  }
+  
+  .playing-card.disabled {
+    @apply opacity-50 cursor-not-allowed;
+    transform: none !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  .card-hand {
+    @apply flex justify-center items-end;
+    perspective: 1000px;
+    min-height: 140px;
+    padding: 20px 0;
+  }
+  
+  .card-in-hand {
+    margin-right: -15px;
+    transform-origin: center bottom;
+  }
+  
+  .card-corner {
+    @apply absolute text-xs font-bold;
+    line-height: 1;
+  }
+  
+  .card-corner.top-left {
+    top: 6px;
+    left: 6px;
+  }
+  
+  .card-corner.bottom-right {
+    bottom: 6px;
+    right: 6px;
+    transform: rotate(180deg);
+  }
+  
+  .card-center {
+    @apply absolute inset-0 flex flex-col items-center justify-center text-center;
+    padding: 8px 4px;
+  }
+  
+  .card-flag {
+    font-size: 24px;
+    margin-bottom: 2px;
+  }
+  
+  .card-name {
+    font-size: 8px;
+    font-weight: 600;
+    line-height: 1.1;
+    color: #374151;
   }
 }

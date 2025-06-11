@@ -21,8 +21,9 @@ export function useSocket(): UseSocketReturn {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    console.log('NODE_ENV:', process.env.NODE_ENV)
     // Initialize socket connection
-    const socket = io(process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://export9.oec.world', {
+    const socket = io(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://export9.oec.world', {
       transports: ['websocket', 'polling'],
       timeout: 20000,
       autoConnect: true,
