@@ -135,20 +135,14 @@ export default function GameBoard({
       backgroundAttachment: 'fixed'
     }}>
       {/* Header */}
-      <div className="card mb-6 bg-gradient-to-r from-green-800 to-blue-900 text-white">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">🃏 Export Card Game</h1>
-            <div className="flex space-x-4 text-sm text-green-100">
-              <span>🎮 Round {gameState.current_round} of {gameState.total_rounds}</span>
-              {gameState.current_product && (
-                <span>🎯 <strong>{gameState.current_product.name}</strong></span>
-              )}
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-green-200">Your Score</div>
-            <div className="text-3xl font-bold text-yellow-300">{currentPlayer?.score || 0}</div>
+      <div className="card mb-4 bg-gradient-to-r from-green-800 to-blue-900 text-white">
+        <div>
+          <h1 className="text-xl font-bold mb-2">🃏 Export Card Game</h1>
+          <div className="flex space-x-4 text-sm text-green-100">
+            <span>🎮 Round {gameState.current_round} of {gameState.total_rounds}</span>
+            {gameState.current_product && (
+              <span>🎯 <strong>{gameState.current_product.name}</strong></span>
+            )}
           </div>
         </div>
       </div>
@@ -168,53 +162,55 @@ export default function GameBoard({
 
       {/* Current Product */}
       {gameState.current_product && gameStatus === 'playing' && (
-        <div className="card mb-6 bg-gradient-to-r from-amber-100 to-yellow-100 border-2 border-yellow-300">
+        <div className="card mb-4 bg-gradient-to-r from-amber-100 to-yellow-100 border-2 border-yellow-300">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-amber-800 mb-3">
-              🏆 This Round: {gameState.current_product.name}
+            <h2 className="text-xl md:text-2xl font-bold text-amber-800 mb-2">
+              🏆 {gameState.current_product.name}
             </h2>
-            <p className="text-amber-700 text-lg mb-2">
+            <p className="text-amber-700 text-sm md:text-lg">
               Play the country card with the highest {gameState.current_product.name.toLowerCase()} exports
             </p>
-            <div className="inline-block bg-amber-200 px-3 py-1 rounded-full text-sm text-amber-800 font-semibold">
-              📊 Category: {gameState.current_product.category}
-            </div>
           </div>
         </div>
       )}
 
       {/* Countdown Timer */}
       {gameStatus === 'playing' && !hasSubmitted && (
-        <div className="card mb-6 bg-gradient-to-br from-gray-900 to-gray-800 text-white border-2 border-gray-600">
-          <div className="text-center">
-            <div className="text-sm text-gray-300 mb-2">⏰ TIME REMAINING</div>
-            <div className={`text-7xl font-mono font-bold mb-3 ${
-              timeLeft <= 5 ? 'text-red-400 animate-pulse' : 
-              timeLeft <= 10 ? 'text-yellow-400' : 'text-green-400'
-            }`}>
-              {timeLeft}
-            </div>
-            <p className={`text-lg font-semibold ${
-              timeLeft <= 5 ? 'text-red-300' : 'text-gray-300'
-            }`}>
-              {timeLeft <= 5 ? '🚨 TIME RUNNING OUT!' : 'seconds to play your card'}
-            </p>
-            
-            {/* Progress Bar */}
-            <div className="w-full bg-gray-700 rounded-full h-4 mt-4 mb-3 border border-gray-600">
-              <div 
-                className={`h-4 rounded-full transition-all duration-1000 ${
-                  timeLeft <= 5 ? 'bg-red-500' : 
-                  timeLeft <= 10 ? 'bg-yellow-500' : 'bg-green-500'
-                }`}
-                style={{ width: `${(timeLeft / 20) * 100}%` }}
-              ></div>
+        <div className="card mb-4 bg-gradient-to-br from-gray-900 to-gray-800 text-white border-2 border-gray-600">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <div className="text-xs text-gray-300 mb-1">⏰ TIME</div>
+                <div className={`text-3xl font-mono font-bold ${
+                  timeLeft <= 5 ? 'text-red-400 animate-pulse' : 
+                  timeLeft <= 10 ? 'text-yellow-400' : 'text-green-400'
+                }`}>
+                  {timeLeft}
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className={`text-sm font-semibold mb-2 ${
+                  timeLeft <= 5 ? 'text-red-300' : 'text-gray-300'
+                }`}>
+                  {timeLeft <= 5 ? '🚨 TIME RUNNING OUT!' : 'seconds to play your card'}
+                </p>
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-700 rounded-full h-3 border border-gray-600">
+                  <div 
+                    className={`h-3 rounded-full transition-all duration-1000 ${
+                      timeLeft <= 5 ? 'bg-red-500' : 
+                      timeLeft <= 10 ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}
+                    style={{ width: `${(timeLeft / 20) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
             </div>
             
             {selectedCard && (
-              <div className="bg-blue-800 border border-blue-600 rounded-lg p-2 mt-3">
-                <p className="text-sm text-blue-200">
-                  🃏 Ready to play: <span className="font-bold text-blue-100">
+              <div className="bg-blue-800 border border-blue-600 rounded-lg p-2 ml-4">
+                <p className="text-xs text-blue-200">
+                  🃏 Ready: <span className="font-bold text-blue-100">
                     {gameState.your_cards.find(c => c.country_code === selectedCard)?.country_name}
                   </span>
                 </p>
@@ -224,37 +220,33 @@ export default function GameBoard({
         </div>
       )}
 
-      {/* Players */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {gameState.players.map((player) => (
-          <div key={player.id} className={`card ${
-            player.name === playerName 
-              ? 'bg-gradient-to-br from-blue-100 to-blue-50 border-2 border-blue-400' 
-              : 'bg-gradient-to-br from-gray-100 to-gray-50 border border-gray-300'
-          }`}>
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-bold text-xl flex items-center gap-2">
-                  {player.name === playerName && '👤'}
-                  {player.name !== playerName && '🎭'}
-                  {player.name}
-                </h3>
-                {player.name === playerName && (
-                  <span className="text-sm text-blue-600 font-semibold">(Your Position)</span>
-                )}
+      {/* Players - Compact Horizontal Layout */}
+      <div className="card mb-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-300 py-2">
+        <div className="grid grid-cols-2 gap-3">
+          {gameState.players.map((player) => (
+            <div key={player.id} className={`text-center p-2 rounded ${
+              player.name === playerName 
+                ? 'bg-blue-100 border border-blue-300' 
+                : 'bg-gray-100 border border-gray-200'
+            }`}>
+              <div className="flex items-center justify-center gap-1">
+                {player.name === playerName && '👤'}
+                {player.name !== playerName && '🎭'}
+                <span className="font-bold text-sm">{player.name}</span>
+                {player.name === playerName && <span className="text-xs text-blue-600">(You)</span>}
               </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-green-600">{player.score}</div>
-                <div className="text-sm text-gray-600 flex items-center gap-1">
+              <div className="flex items-center justify-center gap-2 mt-1">
+                <div className="text-xl font-bold text-green-600">{player.score}</div>
+                <div className="text-xs text-gray-600">
                   🃏 {player.name === playerName 
-                    ? `${gameState.your_cards.length} cards`
-                    : `${10 - (gameState.current_round - 1)} cards`
+                    ? gameState.your_cards.length
+                    : 10 - (gameState.current_round - 1)
                   }
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Error Display */}
