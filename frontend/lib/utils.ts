@@ -24,7 +24,8 @@ export function getFlagEmoji(countryCode: string): string {
     'CN': '🇨🇳', 'US': '🇺🇸', 'DE': '🇩🇪', 'JP': '🇯🇵', 'GB': '🇬🇧',
     'FR': '🇫🇷', 'KR': '🇰🇷', 'IT': '🇮🇹', 'CA': '🇨🇦', 'ES': '🇪🇸',
     'IN': '🇮🇳', 'NL': '🇳🇱', 'SA': '🇸🇦', 'CH': '🇨🇭', 'AU': '🇦🇺',
-    'IE': '🇮🇪', 'MX': '🇲🇽', 'RU': '🇷🇺', 'TH': '🇹🇭', 'MY': '🇲🇾'
+    'IE': '🇮🇪', 'MX': '🇲🇽', 'RU': '🇷🇺', 'TH': '🇹🇭', 'MY': '🇲🇾',
+    'BR': '🇧🇷'
   }
   return flags[countryCode] || '🏳️'
 }
@@ -60,4 +61,32 @@ export function getCategoryEmoji(category: string): string {
     'materials': '🏭'
   }
   return categoryEmojis[category] || '📦'
+}
+
+/**
+ * Get specific product emoji by product ID
+ */
+export function getProductEmoji(productId: string): string {
+  const productEmojis: Record<string, string> = {
+    'cars': '🚗',
+    'phones': '📱',
+    'medicine': '💊',
+    'coffee': '☕',
+    'wine': '🍷',
+    'computers': '💻',
+    'oil': '🛢️',
+    'circuits': '🔌',
+    'gas': '⛽',
+    'cheese': '🧀',
+    'beer': '🍺',
+    'tires': '🛞',
+    'soybeans': '🌱',
+    'sugar': '🍯',
+    'liquor': '🥃',
+    'refined_oil': '⛽',
+    'auto_parts': '🔧',
+    'drones': '🚁',
+    'corn': '🌽'
+  }
+  return productEmojis[productId] || '📦'
 }

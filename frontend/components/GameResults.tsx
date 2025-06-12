@@ -18,7 +18,7 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
   const isDraw = currentPlayer && opponent && currentPlayer.score === opponent.score
   
   const handlePlayAgain = () => {
-    router.push('/')
+    router.push(`/?name=${encodeURIComponent(playerName)}`)
   }
 
   return (

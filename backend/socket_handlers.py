@@ -109,6 +109,46 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
             await sio.emit('error', {'message': 'Failed to join game'}, room=sid)
     
     @sio.event
+    async def play_cpu(sid, data):
+        """Handle player choosing to play against CPU"""
+        try:
+            # Find the waiting player
+            player = None
+            for waiting_player in game_manager.waiting_players:
+                if waiting_player.socket_id == sid:
+                    player = waiting_player
+                    break
+            
+            if not player:
+                await sio.emit('error', {'message': 'Player not found in waiting queue'}, room=sid)
+                return
+            
+            # Create CPU game
+            game = game_manager.create_cpu_game(player)
+            logger.info(f"CPU Game created with ID: {game.id}")
+            
+            # Join human player to game room (CPU doesn't need socket room)
+            await sio.enter_room(player.socket_id, f"game_{game.id}")
+            
+            # Start the game
+            game_manager.start_game(game.id)
+            
+            # Send game_found event to human player
+            await sio.emit('game_found', {
+                'game_id': game.id,
+                'players': [{'id': p.id, 'name': p.name, 'is_cpu': p.is_cpu} for p in game.players],
+                'your_cards': [{'country_code': c.country.code, 'country_name': c.country.name} 
+                              for c in player.cards]
+            }, room=player.socket_id)
+            
+            # Start first round
+            await start_round(sio, game_manager, game.id, 1)
+            
+        except Exception as e:
+            logger.error(f"Error in play_cpu: {e}")
+            await sio.emit('error', {'message': 'Failed to create CPU game'}, room=sid)
+    
+    @sio.event
     async def play_card(sid, data):
         """Handle player playing a card"""
         try:
@@ -240,20 +280,75 @@ async def start_round(sio: socketio.AsyncServer, game_manager: GameManager, game
     for player in game.players:
         player.current_card = None
     
-    # Send round started event with updated cards for each player
+    # Send round started event with updated cards for each player (only non-CPU players)
     for player in game.players:
-        available_cards = [c for c in player.cards if not c.is_played]
-        await sio.emit('round_started', {
-            'round_number': round_number,
-            'total_rounds': len(game.rounds),
-            'product': {
-                'id': current_round.product.id,
-                'name': current_round.product.name,
-                'category': current_round.product.category
-            },
-            'your_cards': [{'country_code': c.country.code, 'country_name': c.country.name} 
-                          for c in available_cards]
-        }, room=player.socket_id)
+        if not player.is_cpu:
+            available_cards = [c for c in player.cards if not c.is_played]
+            await sio.emit('round_started', {
+                'round_number': round_number,
+                'total_rounds': len(game.rounds),
+                'product': {
+                    'id': current_round.product.id,
+                    'name': current_round.product.name,
+                    'category': current_round.product.category
+                },
+                'your_cards': [{'country_code': c.country.code, 'country_name': c.country.name} 
+                              for c in available_cards]
+            }, room=player.socket_id)
+    
+    # Auto-play CPU move after a short delay (2 seconds)
+    import asyncio
+    await asyncio.sleep(2)
+    await cpu_auto_play(sio, game_manager, game_id)
+
+async def cpu_auto_play(sio: socketio.AsyncServer, game_manager: GameManager, game_id: str):
+    """Handle CPU automatically playing the best card"""
+    game = game_manager.games.get(game_id)
+    if not game:
+        return
+    
+    current_round = game.rounds[game.current_round - 1]
+    
+    # Find CPU player
+    cpu_player = None
+    for player in game.players:
+        if player.is_cpu:
+            cpu_player = player
+            break
+    
+    if not cpu_player:
+        return
+    
+    # Check if CPU already played this round
+    if cpu_player.id in current_round.player_cards:
+        return
+    
+    # Get best card for CPU
+    best_card = await game_manager.get_cpu_best_card(cpu_player, current_round.product)
+    if not best_card:
+        logger.error(f"CPU has no available cards in game {game_id}")
+        return
+    
+    # Mark card as played
+    best_card.is_played = True
+    cpu_player.current_card = best_card
+    
+    # Add to current round
+    current_round.player_cards[cpu_player.id] = best_card
+    
+    logger.info(f"CPU played {best_card.country.code} in game {game_id}")
+    
+    # Notify human player about CPU move
+    await sio.emit('card_played', {
+        'player_id': cpu_player.id,
+        'player_name': cpu_player.name,
+        'country_code': best_card.country.code,
+        'country_name': best_card.country.name
+    }, room=f"game_{game_id}")
+    
+    # Check if all players have played
+    if len(current_round.player_cards) == len(game.players):
+        await resolve_round(sio, game_manager, game_id)
 
 async def resolve_round(sio: socketio.AsyncServer, game_manager: GameManager, game_id: str):
     """Resolve the current round and determine winner"""
@@ -267,15 +362,24 @@ async def resolve_round(sio: socketio.AsyncServer, game_manager: GameManager, ga
     for player_id, card in current_round.player_cards.items():
         export_value = await game_manager.get_export_value(card.country.code, current_round.product.id)
         current_round.export_data[card.country.code] = export_value
+        player = game.get_player_by_id(player_id)
+        player_type = "CPU" if player.is_cpu else "Human"
+        logger.info(f"{player_type} ({player.name}) played {card.country.code} with {export_value:.2f}B exports for {current_round.product.name}")
     
     # Determine winner(s) - handle ties when both players pick same country
     winner_country = max(current_round.export_data, key=current_round.export_data.get)
+    winner_export_value = current_round.export_data[winner_country]
+    logger.info(f"Winning country: {winner_country} with {winner_export_value:.2f}B exports")
+    
     winner_player_ids = []
     
     # Find all players who played the winning country
     for player_id, card in current_round.player_cards.items():
         if card.country.code == winner_country:
             winner_player_ids.append(player_id)
+            player = game.get_player_by_id(player_id)
+            player_type = "CPU" if player.is_cpu else "Human"
+            logger.info(f"{player_type} ({player.name}) wins this round with {winner_country}")
     
     # Award points to all winners (handles ties)
     for winner_id in winner_player_ids:
@@ -353,4 +457,10 @@ async def end_game(sio: socketio.AsyncServer, game_manager: GameManager, game_id
     import asyncio
     await asyncio.sleep(10)
     if game_id in game_manager.games:
+        # Remove players from player_game_map
+        for player in game.players:
+            if player.id in game_manager.player_game_map:
+                del game_manager.player_game_map[player.id]
+        # Remove game
         del game_manager.games[game_id]
+        logger.info(f"Cleaned up completed game {game_id}")

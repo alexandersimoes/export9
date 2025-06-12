@@ -12,7 +12,7 @@ function GamePageContent() {
   const searchParams = useSearchParams()
   const playerName = searchParams.get('name') || ''
   
-  const { gameState, gameStatus, error, joinGame, playCard, reconnect } = useSocket()
+  const { gameState, gameStatus, error, joinGame, playCard, playCPU, reconnect } = useSocket()
 
   useEffect(() => {
     if (playerName && gameStatus === 'connecting') {
@@ -36,6 +36,7 @@ function GamePageContent() {
       <WaitingRoom 
         playerName={playerName}
         status={gameStatus}
+        onPlayCPU={playCPU}
       />
     )
   }

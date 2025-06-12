@@ -11,6 +11,7 @@ interface UseSocketReturn {
   error: string | null
   joinGame: (playerName: string) => void
   playCard: (countryCode: string) => void
+  playCPU: () => void
   reconnect: () => void
 }
 
@@ -162,6 +163,12 @@ export function useSocket(): UseSocketReturn {
     }
   }
 
+  const playCPU = () => {
+    if (socketRef.current) {
+      socketRef.current.emit('play_cpu', {})
+    }
+  }
+
   const reconnect = () => {
     if (socketRef.current) {
       socketRef.current.connect()
@@ -175,6 +182,7 @@ export function useSocket(): UseSocketReturn {
     error,
     joinGame,
     playCard,
+    playCPU,
     reconnect
   }
 }

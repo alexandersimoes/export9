@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { GameState, GameStatus, Card } from '@/types/game'
 import RoundResultModal from './RoundResultModal'
-import { getFlagEmoji } from '@/lib/utils'
+import { getFlagEmoji, getProductEmoji } from '@/lib/utils'
 
 interface GameBoardProps {
   gameState: GameState
@@ -141,7 +141,7 @@ export default function GameBoard({
           <div className="flex space-x-4 text-sm text-green-100">
             <span>🎮 Round {gameState.current_round} of {gameState.total_rounds}</span>
             {gameState.current_product && (
-              <span>🎯 <strong>{gameState.current_product.name}</strong></span>
+              <span>{getProductEmoji(gameState.current_product.id)} <strong>{gameState.current_product.name}</strong></span>
             )}
           </div>
         </div>
@@ -160,65 +160,6 @@ export default function GameBoard({
         </div>
       )}
 
-      {/* Current Product */}
-      {gameState.current_product && gameStatus === 'playing' && (
-        <div className="card mb-4 bg-gradient-to-r from-amber-100 to-yellow-100 border-2 border-yellow-300">
-          <div className="text-center">
-            <h2 className="text-xl md:text-2xl font-bold text-amber-800 mb-2">
-              🏆 {gameState.current_product.name}
-            </h2>
-            <p className="text-amber-700 text-sm md:text-lg">
-              Play the country card with the highest {gameState.current_product.name.toLowerCase()} exports
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Countdown Timer */}
-      {gameStatus === 'playing' && !hasSubmitted && (
-        <div className="card mb-4 bg-gradient-to-br from-gray-900 to-gray-800 text-white border-2 border-gray-600">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="text-center">
-                <div className="text-xs text-gray-300 mb-1">⏰ TIME</div>
-                <div className={`text-3xl font-mono font-bold ${
-                  timeLeft <= 5 ? 'text-red-400 animate-pulse' : 
-                  timeLeft <= 10 ? 'text-yellow-400' : 'text-green-400'
-                }`}>
-                  {timeLeft}
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className={`text-sm font-semibold mb-2 ${
-                  timeLeft <= 5 ? 'text-red-300' : 'text-gray-300'
-                }`}>
-                  {timeLeft <= 5 ? '🚨 TIME RUNNING OUT!' : 'seconds to play your card'}
-                </p>
-                {/* Progress Bar */}
-                <div className="w-full bg-gray-700 rounded-full h-3 border border-gray-600">
-                  <div 
-                    className={`h-3 rounded-full transition-all duration-1000 ${
-                      timeLeft <= 5 ? 'bg-red-500' : 
-                      timeLeft <= 10 ? 'bg-yellow-500' : 'bg-green-500'
-                    }`}
-                    style={{ width: `${(timeLeft / 20) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-            
-            {selectedCard && (
-              <div className="bg-blue-800 border border-blue-600 rounded-lg p-2 ml-4">
-                <p className="text-xs text-blue-200">
-                  🃏 Ready: <span className="font-bold text-blue-100">
-                    {gameState.your_cards.find(c => c.country_code === selectedCard)?.country_name}
-                  </span>
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Players - Compact Horizontal Layout */}
       <div className="card mb-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-300 py-2">
@@ -258,9 +199,31 @@ export default function GameBoard({
         </div>
       )}
 
+      {/* Current Product */}
+      {gameState.current_product && gameStatus === 'playing' && (
+        <div className="card mb-4 bg-gradient-to-r from-amber-100 to-yellow-100 border-2 border-yellow-300">
+          <div className="text-center">
+            <h2 className="text-xl md:text-2xl font-bold text-amber-800 mb-2">
+              {getProductEmoji(gameState.current_product.id)} {gameState.current_product.name}
+            </h2>
+          </div>
+        </div>
+      )}
+
       {/* Your Cards */}
       {gameStatus === 'playing' && gameState.your_cards.length > 0 && !hasSubmitted && (
         <div className="card">
+          {/* Timer Progress Bar */}
+          <div className="w-full bg-gray-300 rounded-full h-2 mb-4">
+            <div 
+              className={`h-2 rounded-full transition-all duration-1000 ${
+                timeLeft <= 5 ? 'bg-red-500 animate-pulse' : 
+                timeLeft <= 10 ? 'bg-yellow-500' : 'bg-green-500'
+              }`}
+              style={{ width: `${(timeLeft / 20) * 100}%` }}
+            ></div>
+          </div>
+          
           <h3 className="text-lg font-bold mb-4 text-center">Your Hand</h3>
           <div className="card-hand">
             {gameState.your_cards.map((card: Card, index: number) => {
@@ -325,7 +288,7 @@ export default function GameBoard({
             ) : (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                 <p className="text-yellow-700 font-semibold">
-                  🎮 Choose a card from your hand to play
+                  Choose the country with the most exports
                 </p>
               </div>
             )}
