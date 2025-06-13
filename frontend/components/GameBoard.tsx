@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { GameState, GameStatus, Card } from '@/types/game'
 import RoundResultModal from './RoundResultModal'
 import { getFlagEmoji, getProductEmoji } from '@/lib/utils'
@@ -10,6 +11,7 @@ interface GameBoardProps {
   gameStatus: GameStatus
   playerName: string
   onPlayCard: (countryCode: string) => void
+  onQuitGame: () => void
   error: string | null
 }
 
@@ -18,12 +20,25 @@ export default function GameBoard({
   gameStatus, 
   playerName, 
   onPlayCard, 
+  onQuitGame,
   error 
 }: GameBoardProps) {
   const [selectedCard, setSelectedCard] = useState<string | null>(null)
   const [showRoundResult, setShowRoundResult] = useState(false)
   const [timeLeft, setTimeLeft] = useState(20)
   const [hasSubmitted, setHasSubmitted] = useState(false)
+  const [showQuitDialog, setShowQuitDialog] = useState(false)
+  const router = useRouter()
+
+  const handleLogoClick = () => {
+    setShowQuitDialog(true)
+  }
+
+  const handleQuitGame = () => {
+    onQuitGame()
+    router.push(`/?name=${encodeURIComponent(playerName)}`)
+    setShowQuitDialog(false)
+  }
 
   const handleCardSelect = (countryCode: string) => {
     if (gameStatus === 'playing' && !hasSubmitted && timeLeft > 0) {
@@ -54,25 +69,32 @@ export default function GameBoard({
   }
 
   const handleAutoSubmit = () => {
-    if (hasSubmitted) return
+    if (hasSubmitted || gameStatus !== 'playing') return
     
     // Auto-submit the selected card if it's still valid, or first available card
     let cardToPlay = null
     
+    // Ensure we have available cards
+    if (!gameState.your_cards || gameState.your_cards.length === 0) {
+      console.log('No cards available for auto-submit')
+      return
+    }
+    
     // Double-check that the selected card is still available and valid
     if (selectedCard && gameState.your_cards.some(card => card.country_code === selectedCard)) {
       cardToPlay = selectedCard
-    } else if (gameState.your_cards.length > 0) {
-      // If selected card is not valid, use the first available card
+    } else {
+      // Use the first available card
       cardToPlay = gameState.your_cards[0].country_code
-      console.log(`Selected card ${selectedCard} no longer valid, auto-submitting first available: ${cardToPlay}`)
+      console.log(`Auto-submitting first available card: ${cardToPlay}`)
     }
     
     if (cardToPlay) {
       console.log(`Auto-submitting card: ${cardToPlay}`)
-      onPlayCard(cardToPlay)
+      // Set submitted state immediately to prevent double submission
       setHasSubmitted(true)
       setSelectedCard(null)
+      onPlayCard(cardToPlay)
     }
   }
 
@@ -117,8 +139,10 @@ export default function GameBoard({
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer)
-          // Auto-submit when time runs out
-          setTimeout(() => handleAutoSubmit(), 0)
+          // Auto-submit when time runs out - only if still playing and not submitted
+          if (gameStatus === 'playing' && !hasSubmitted) {
+            setTimeout(() => handleAutoSubmit(), 100)
+          }
           return 0
         }
         return prev - 1
@@ -130,19 +154,37 @@ export default function GameBoard({
 
 
   return (
-    <div className="min-h-screen p-4" style={{
-      background: 'radial-gradient(ellipse at center, #1e3a3a 0%, #0f2027 50%, #2c5364 100%)',
-      backgroundAttachment: 'fixed'
-    }}>
+    <div className="poker-table p-4 flex justify-center">
+      <div className="w-full max-w-[800px]">
       {/* Header */}
-      <div className="card mb-4 bg-gradient-to-r from-green-800 to-blue-900 text-white">
-        <div>
-          <h1 className="text-xl font-bold mb-2">🃏 Export Card Game</h1>
-          <div className="flex space-x-4 text-sm text-green-100">
-            <span>🎮 Round {gameState.current_round} of {gameState.total_rounds}</span>
+      <div className="mb-3 rounded-lg flex items-center justify-between overflow-hidden" style={{ }}>
+
+        <div className="pl-3">
+          <div className="hidden sm:block text-left">
+            <div className="text-lg font-bold" style={{ color: '#fbe4c7', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
+              Round {gameState.current_round}
+            </div>
+          </div>
+        </div>
+        
+        <img 
+          src="/logo.png" 
+          alt="Export Holdem" 
+          className="h-24 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+          style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))' }}
+          onClick={handleLogoClick}
+        />
+        
+        <div className="pr-3">
+          <div className="hidden sm:block text-right">
             {gameState.current_product && (
-              <span>{getProductEmoji(gameState.current_product.id)} <strong>{gameState.current_product.name}</strong></span>
+              <div className="text-base font-semibold" style={{ color: '#fbe4c7', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
+                {getProductEmoji(gameState.current_product.id)} {gameState.current_product.name}
+              </div>
             )}
+          </div>
+          <div className="sm:hidden text-sm text-right font-semibold" style={{ color: '#fbe4c7', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
+            {gameState.current_round}/{gameState.total_rounds}
           </div>
         </div>
       </div>
@@ -161,37 +203,37 @@ export default function GameBoard({
       )}
 
 
-      {/* Players - Compact Horizontal Layout */}
-      <div className="card mb-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-300 py-2">
-        <div className="grid grid-cols-2 gap-3">
-          {gameState.players.map((player) => (
-            <div key={player.id} className={`text-center p-2 rounded ${
-              player.name === playerName 
-                ? 'bg-blue-100 border border-blue-300' 
-                : 'bg-gray-100 border border-gray-200'
-            }`}>
-              <div className="flex items-center justify-center gap-1">
-                {player.name === playerName && '👤'}
-                {player.name !== playerName && '🎭'}
-                <span className="font-bold text-sm">{player.name}</span>
-                {player.name === playerName && <span className="text-xs text-blue-600">(You)</span>}
+      {/* Players - Clean Scoreboard */}
+      <div className="mb-3 p-3 rounded-lg" style={{ 
+        backgroundColor: 'rgba(251, 228, 199, 0.3)', 
+        border: '1px solid rgba(212, 184, 150, 0.5)' 
+      }}>
+        <div className="flex items-center justify-center gap-6">
+          {gameState.players.map((player, index) => (
+            <div key={player.id} className="flex items-center gap-2">
+              {player.name === playerName && '👤'}
+              {player.name !== playerName && (player.is_cpu ? '🤖' : '🎭')}
+              <span className="font-semibold text-sm" style={{ color: 'var(--poker-dark-text)' }}>
+                {player.name}
+              </span>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ 
+                backgroundColor: 'var(--poker-accent)', 
+                color: 'var(--poker-dark-text)',
+                border: '2px solid #e6a82e',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+              }}>
+                {player.score || 0}
               </div>
-              <div className="flex items-center justify-center gap-2 mt-1">
-                <div className="text-xl font-bold text-green-600">{player.score}</div>
-                <div className="text-xs text-gray-600">
-                  🃏 {player.name === playerName 
-                    ? gameState.your_cards.length
-                    : 10 - (gameState.current_round - 1)
-                  }
-                </div>
-              </div>
+              {index === 0 && (
+                <span className="text-sm font-medium mx-2" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>vs</span>
+              )}
             </div>
           ))}
         </div>
       </div>
 
       {/* Error Display */}
-      {error && (
+      {error && !error.includes('not found or already played') && (
         <div className="card mb-6 bg-red-50 border-red-200">
           <div className="text-center text-red-700">
             <strong>Error:</strong> {error}
@@ -201,9 +243,9 @@ export default function GameBoard({
 
       {/* Current Product */}
       {gameState.current_product && gameStatus === 'playing' && (
-        <div className="card mb-4 bg-gradient-to-r from-amber-100 to-yellow-100 border-2 border-yellow-300">
+        <div className="card mb-4 border-2" style={{ borderColor: 'var(--poker-accent)' }}>
           <div className="text-center">
-            <h2 className="text-xl md:text-2xl font-bold text-amber-800 mb-2">
+            <h2 className="text-xl md:text-2xl font-bold mb-2" style={{ color: 'var(--poker-dark-text)' }}>
               {getProductEmoji(gameState.current_product.id)} {gameState.current_product.name}
             </h2>
           </div>
@@ -214,17 +256,19 @@ export default function GameBoard({
       {gameStatus === 'playing' && gameState.your_cards.length > 0 && !hasSubmitted && (
         <div className="card">
           {/* Timer Progress Bar */}
-          <div className="w-full bg-gray-300 rounded-full h-2 mb-4">
+          <div className="poker-progress mb-4">
             <div 
-              className={`h-2 rounded-full transition-all duration-1000 ${
-                timeLeft <= 5 ? 'bg-red-500 animate-pulse' : 
-                timeLeft <= 10 ? 'bg-yellow-500' : 'bg-green-500'
+              className={`poker-progress-bar ${
+                timeLeft <= 5 ? 'animate-pulse' : ''
               }`}
-              style={{ width: `${(timeLeft / 20) * 100}%` }}
+              style={{ 
+                width: `${(timeLeft / 20) * 100}%`,
+                background: timeLeft <= 5 ? '#dc2626' : timeLeft <= 10 ? '#eab308' : 'linear-gradient(90deg, var(--poker-accent) 0%, #e6a82e 100%)'
+              }}
             ></div>
           </div>
           
-          <h3 className="text-lg font-bold mb-4 text-center">Your Hand</h3>
+          <h3 className="text-lg font-bold mb-4 text-center" style={{ color: 'var(--poker-dark-text)' }}>Your Hand</h3>
           <div className="card-hand">
             {gameState.your_cards.map((card: Card, index: number) => {
               const rotation = (index - (gameState.your_cards.length - 1) / 2) * 8; // Fan out cards
@@ -269,25 +313,25 @@ export default function GameBoard({
           <div className="text-center mt-6">
             {selectedCard ? (
               <div className="space-y-3">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-sm text-blue-700 mb-2">
+                <div className="rounded-lg p-3 border-2" style={{ backgroundColor: '#fff7e6', borderColor: 'var(--poker-accent)' }}>
+                  <p className="text-sm mb-2" style={{ color: 'var(--poker-dark-text)' }}>
                     🃏 Selected: <strong>{gameState.your_cards.find(c => c.country_code === selectedCard)?.country_name}</strong>
                   </p>
-                  <p className="text-xs text-blue-600">
+                  <p className="text-xs" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
                     You can change your selection anytime before playing your card
                   </p>
                 </div>
                 <button
                   onClick={handleSubmitCard}
                   disabled={hasSubmitted || timeLeft <= 0}
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   🎯 Play Card
                 </button>
               </div>
             ) : (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <p className="text-yellow-700 font-semibold">
+              <div className="rounded-lg p-3 border" style={{ backgroundColor: '#f9f7f4', borderColor: '#d4b896' }}>
+                <p className="font-semibold" style={{ color: 'var(--poker-dark-text)' }}>
                   Choose the country with the most exports
                 </p>
               </div>
@@ -335,6 +379,37 @@ export default function GameBoard({
         </div>
       )}
 
+      {/* Quit Game Confirmation Modal */}
+      {showQuitDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-sm sm:max-w-md">
+            <div className="text-center">
+              <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">⚠️</div>
+              <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4" style={{ color: 'var(--poker-dark-text)' }}>
+                End Game?
+              </h2>
+              <p className="mb-4 sm:mb-6 text-sm sm:text-base" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>
+                Are you sure you want to quit? Your opponent will automatically win.
+              </p>
+              <div className="flex gap-2 sm:gap-3">
+                <button
+                  onClick={() => setShowQuitDialog(false)}
+                  className="flex-1 btn-secondary text-sm sm:text-base"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleQuitGame}
+                  className="flex-1 btn-primary text-sm sm:text-base"
+                >
+                  Quit Game
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Round Result Modal */}
       {showRoundResult && gameState.lastRoundResult && (
         <RoundResultModal
@@ -342,6 +417,7 @@ export default function GameBoard({
           playerName={playerName}
         />
       )}
+      </div>
     </div>
   )
 }

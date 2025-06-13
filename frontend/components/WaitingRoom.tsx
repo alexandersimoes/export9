@@ -10,16 +10,17 @@ interface WaitingRoomProps {
 }
 
 export default function WaitingRoom({ playerName, status, onPlayCPU }: WaitingRoomProps) {
-  const [waitTime, setWaitTime] = useState(0)
+  const [waitTime, setWaitTime] = useState(10)
   const [showCPUOption, setShowCPUOption] = useState(false)
 
   useEffect(() => {
     if (status === 'waiting_for_opponent') {
       const timer = setInterval(() => {
         setWaitTime(prev => {
-          const newTime = prev + 1
-          if (newTime >= 10) {
+          const newTime = prev - 1
+          if (newTime <= 0) {
             setShowCPUOption(true)
+            return 0
           }
           return newTime
         })
@@ -27,24 +28,24 @@ export default function WaitingRoom({ playerName, status, onPlayCPU }: WaitingRo
 
       return () => clearInterval(timer)
     } else {
-      setWaitTime(0)
+      setWaitTime(10)
       setShowCPUOption(false)
     }
   }, [status])
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-purple-900">
-      <div className="card max-w-md w-full mx-4">
+    <div className="poker-table flex items-center justify-center p-4">
+      <div className="card w-full max-w-[800px] mx-4">
         <div className="text-center">
           <div className="mb-6">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-game-primary mx-auto mb-4"></div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--poker-dark-text)' }}>
               Welcome, {playerName}!
             </h2>
           </div>
 
           {status === 'connecting' && (
             <div>
-              <p className="text-lg text-gray-600 mb-4">Connecting to game server...</p>
+              <p className="text-lg mb-4" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Connecting to game server...</p>
               <div className="flex justify-center space-x-1">
                 <div className="w-2 h-2 bg-game-primary rounded-full animate-bounce"></div>
                 <div className="w-2 h-2 bg-game-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -55,33 +56,35 @@ export default function WaitingRoom({ playerName, status, onPlayCPU }: WaitingRo
 
           {status === 'waiting_for_opponent' && (
             <div>
-              <p className="text-lg text-gray-600 mb-2">Looking for an opponent...</p>
-              <p className="text-sm text-gray-500 mb-4">Waiting for {waitTime} seconds</p>
+              <p className="text-lg mb-2" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Looking for an opponent...</p>
+              <p className="text-sm mb-4" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>
+                {waitTime > 0 ? `CPU option in ${waitTime} seconds` : 'CPU option available'}
+              </p>
               
               {!showCPUOption ? (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-blue-700">
+                <div className="rounded-lg p-4 mb-4 border" style={{ backgroundColor: '#f9f7f4', borderColor: '#d4b896' }}>
+                  <p className="text-sm" style={{ color: 'var(--poker-dark-text)' }}>
                     You'll be automatically matched with another player when one becomes available.
                   </p>
-                  <p className="text-xs text-blue-600 mt-2">
-                    Or you can play against the CPU after 30 seconds
+                  <p className="text-xs mt-2" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
+                    Or you can play against the CPU after 10 seconds
                   </p>
                 </div>
               ) : (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-yellow-800 mb-3">
+                <div className="rounded-lg p-4 mb-4 border-2" style={{ backgroundColor: '#fff7e6', borderColor: 'var(--poker-accent)' }}>
+                  <p className="text-sm mb-3" style={{ color: 'var(--poker-dark-text)' }}>
                     Still no opponent found. Would you like to play against the computer?
                   </p>
                   <div className="flex gap-2 justify-center">
                     <button
                       onClick={onPlayCPU}
-                      className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                      className="btn-primary"
                     >
                       🤖 Play vs CPU
                     </button>
                     <button
                       onClick={() => setShowCPUOption(false)}
-                      className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                      className="btn-secondary"
                     >
                       Keep Waiting
                     </button>

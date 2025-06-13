@@ -12,6 +12,7 @@ interface UseSocketReturn {
   joinGame: (playerName: string) => void
   playCard: (countryCode: string) => void
   playCPU: () => void
+  quitGame: () => void
   reconnect: () => void
 }
 
@@ -137,8 +138,11 @@ export function useSocket(): UseSocketReturn {
 
     socket.on('error', (data) => {
       console.error('Game error:', data)
-      setError(data.message || 'An error occurred')
-      setGameStatus('error')
+      // Don't show errors for empty objects or card-related timing issues
+      if (data && data.message && !data.message.includes('not found or already played')) {
+        setError(data.message)
+        setGameStatus('error')
+      }
     })
 
     // Cleanup on unmount
@@ -169,6 +173,18 @@ export function useSocket(): UseSocketReturn {
     }
   }
 
+  const quitGame = () => {
+    if (socketRef.current) {
+      console.log('Quitting game')
+      socketRef.current.emit('quit_game', {})
+      socketRef.current.disconnect()
+      // Reset state
+      setGameState(null)
+      setGameStatus('connecting')
+      setError(null)
+    }
+  }
+
   const reconnect = () => {
     if (socketRef.current) {
       socketRef.current.connect()
@@ -183,6 +199,7 @@ export function useSocket(): UseSocketReturn {
     joinGame,
     playCard,
     playCPU,
+    quitGame,
     reconnect
   }
 }

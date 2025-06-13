@@ -39,54 +39,52 @@ export default function RoundResultModal({ roundResult, playerName }: RoundResul
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 max-w-lg w-full mx-4 shadow-xl">
+      <div className="card max-w-lg w-full mx-4">
         <div className="text-center">
           {/* Winner announcement */}
           <div className="mb-6">
             {isTie ? (
-              <div className="text-blue-600">
+              <div>
                 <div className="text-6xl mb-2">🤝</div>
-                <h2 className="text-3xl font-bold mb-2">It's a Tie!</h2>
-                <p className="text-blue-700">Both players chose the winning country!</p>
+                <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--poker-dark-text)' }}>It's a Tie!</h2>
+                <p style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Both players chose the winning country!</p>
               </div>
             ) : isWinner ? (
-              <div className="text-green-600">
+              <div>
                 <div className="text-6xl mb-2">🏆</div>
-                <h2 className="text-3xl font-bold mb-2">You Won This Round!</h2>
+                <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--poker-accent)' }}>You Won This Round!</h2>
               </div>
             ) : (
-              <div className="text-red-600">
+              <div>
                 <div className="text-6xl mb-2">😔</div>
-                <h2 className="text-3xl font-bold mb-2">
+                <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--poker-dark-text)' }}>
                   {roundResult.winner_name} Won This Round
                 </h2>
               </div>
             )}
-            <p className="text-gray-600">Round {roundResult.round_number} Results</p>
+            <p style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>Round {roundResult.round_number} Results</p>
           </div>
 
           {/* Cards played and export values */}
           <div className="space-y-4 mb-6">
-            <h3 className="text-lg font-semibold">Cards Played:</h3>
+            <h3 className="text-lg font-semibold" style={{ color: 'var(--poker-dark-text)' }}>Cards Played:</h3>
             {roundResult.players.map((player) => (
               <div 
                 key={player.id}
-                className={`p-4 rounded-lg border-2 ${
-                  player.is_round_winner
-                    ? isTie 
-                      ? 'bg-blue-50 border-blue-300' 
-                      : 'bg-green-50 border-green-300'
-                    : 'bg-gray-50 border-gray-200'
-                }`}
+                className="p-4 rounded-lg border-2"
+                style={{
+                  backgroundColor: player.is_round_winner ? '#fff7e6' : '#f9f7f4',
+                  borderColor: player.is_round_winner ? 'var(--poker-accent)' : '#d4b896'
+                }}
               >
                 <div className="flex justify-between items-center">
                   <div className="text-left">
-                    <div className="font-semibold">
+                    <div className="font-semibold" style={{ color: 'var(--poker-dark-text)' }}>
                       {player.name} {player.name === playerName && '(You)'}
                       {player.is_round_winner && (isTie ? ' 🤝' : ' 🏆')}
                     </div>
                     {player.card_played && (
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
                         {player.card_played.country_name}
                         {player.card_played.country_code === roundResult.winner_country && ' (Winning choice!)'}
                       </div>
@@ -94,11 +92,11 @@ export default function RoundResultModal({ roundResult, playerName }: RoundResul
                   </div>
                   <div className="text-right">
                     {player.card_played && (
-                      <div className="text-lg font-bold text-blue-600">
+                      <div className="text-lg font-bold" style={{ color: 'var(--poker-accent)' }}>
                         {formatExportValue(player.card_played.export_value)}
                       </div>
                     )}
-                    <div className="text-xs text-gray-500">exports</div>
+                    <div className="text-xs" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>exports</div>
                   </div>
                 </div>
               </div>
@@ -106,20 +104,20 @@ export default function RoundResultModal({ roundResult, playerName }: RoundResul
           </div>
 
           {/* Current scores */}
-          <div className="bg-blue-50 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold mb-2">
+          <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: '#f9f7f4', border: '1px solid #d4b896' }}>
+            <h3 className="font-semibold mb-2" style={{ color: 'var(--poker-dark-text)' }}>
               Current Scores {isTie && '(Both players earned a point!)'}:
             </h3>
             <div className="grid grid-cols-2 gap-4">
               {roundResult.players.map((player) => (
                 <div key={player.id} className="text-center">
-                  <div className="font-semibold">
+                  <div className="font-semibold" style={{ color: 'var(--poker-dark-text)' }}>
                     {player.name}
                     {player.is_round_winner && (
-                      <span className="text-sm text-green-600 ml-1">+1</span>
+                      <span className="text-sm ml-1" style={{ color: 'var(--poker-accent)' }}>+1</span>
                     )}
                   </div>
-                  <div className="text-2xl font-bold text-blue-600">{player.score}</div>
+                  <div className="poker-chip">{player.score}</div>
                 </div>
               ))}
             </div>
@@ -127,10 +125,10 @@ export default function RoundResultModal({ roundResult, playerName }: RoundResul
 
           {/* Countdown */}
           <div className="text-center">
-            <div className="text-sm text-gray-500 mb-2">
+            <div className="text-sm mb-2" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
               Next round starting in:
             </div>
-            <div className="text-3xl font-bold text-game-primary">
+            <div className="text-3xl font-bold" style={{ color: 'var(--poker-accent)' }}>
               {timeLeft}
             </div>
           </div>

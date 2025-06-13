@@ -22,68 +22,68 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-purple-900 p-4">
-      <div className="card max-w-2xl w-full mx-4">
+    <div className="poker-table flex items-center justify-center p-4">
+      <div className="card w-full max-w-[800px] mx-4">
         <div className="text-center">
           {/* Game Result Header */}
           <div className="mb-8">
             {isWinner && (
               <div className="mb-4">
                 <div className="text-6xl mb-2">🏆</div>
-                <h1 className="text-4xl font-bold text-green-600 mb-2">You Won!</h1>
-                <p className="text-lg text-gray-600">Congratulations on your victory!</p>
+                <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--poker-accent)' }}>You Won!</h1>
+                <p className="text-lg" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Congratulations on your victory!</p>
               </div>
             )}
             
             {!isWinner && !isDraw && (
               <div className="mb-4">
                 <div className="text-6xl mb-2">😔</div>
-                <h1 className="text-4xl font-bold text-red-600 mb-2">You Lost</h1>
-                <p className="text-lg text-gray-600">Better luck next time!</p>
+                <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--poker-dark-text)' }}>You Lost</h1>
+                <p className="text-lg" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Better luck next time!</p>
               </div>
             )}
             
             {isDraw && (
               <div className="mb-4">
                 <div className="text-6xl mb-2">🤝</div>
-                <h1 className="text-4xl font-bold text-yellow-600 mb-2">It's a Draw!</h1>
-                <p className="text-lg text-gray-600">What an evenly matched game!</p>
+                <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--poker-accent)' }}>It's a Draw!</h1>
+                <p className="text-lg" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>What an evenly matched game!</p>
               </div>
             )}
           </div>
 
           {/* Final Scores */}
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">Final Scores</h2>
+            <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--poker-dark-text)' }}>Final Scores</h2>
             <div className="space-y-4">
               {gameState.players
                 .sort((a, b) => b.score - a.score)
                 .map((player, index) => (
                 <div 
                   key={player.id} 
-                  className={`flex justify-between items-center p-4 rounded-lg ${
-                    player.name === playerName 
-                      ? 'bg-blue-50 border-2 border-blue-200' 
-                      : 'bg-gray-50 border border-gray-200'
-                  }`}
+                  className="flex justify-between items-center p-4 rounded-lg border-2"
+                  style={{
+                    backgroundColor: player.name === playerName ? '#fff7e6' : '#f9f7f4',
+                    borderColor: player.name === playerName ? 'var(--poker-accent)' : '#d4b896'
+                  }}
                 >
                   <div className="flex items-center space-x-3">
                     <div className="text-2xl">
                       {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                     </div>
                     <div className="text-left">
-                      <div className="font-bold text-lg">
+                      <div className="font-bold text-lg" style={{ color: 'var(--poker-dark-text)' }}>
                         {player.name}
-                        {player.name === playerName && <span className="text-blue-600 ml-2">(You)</span>}
+                        {player.name === playerName && <span className="ml-2" style={{ color: 'var(--poker-accent)' }}>(You)</span>}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
                         {index === 0 ? 'Winner' : `${index + 1}${index === 1 ? 'nd' : 'rd'} Place`}
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-bold text-game-primary">{player.score}</div>
-                    <div className="text-sm text-gray-600">rounds won</div>
+                    <div className="poker-chip text-xl">{player.score}</div>
+                    <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>rounds won</div>
                   </div>
                 </div>
               ))}
@@ -91,18 +91,18 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
           </div>
 
           {/* Game Stats */}
-          <div className="mb-8 bg-gray-50 rounded-lg p-6">
-            <h3 className="text-lg font-bold mb-4 text-gray-800">Game Statistics</h3>
+          <div className="mb-8 rounded-lg p-6" style={{ backgroundColor: '#f9f7f4', border: '1px solid #d4b896' }}>
+            <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--poker-dark-text)' }}>Game Statistics</h3>
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
-                <div className="text-2xl font-bold text-game-primary">{gameState.total_rounds}</div>
-                <div className="text-sm text-gray-600">Total Rounds</div>
+                <div className="text-2xl font-bold" style={{ color: 'var(--poker-accent)' }}>{gameState.total_rounds}</div>
+                <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>Total Rounds</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-game-primary">
+                <div className="text-2xl font-bold" style={{ color: 'var(--poker-accent)' }}>
                   {Math.max(...gameState.players.map(p => p.score))}
                 </div>
-                <div className="text-sm text-gray-600">Highest Score</div>
+                <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>Highest Score</div>
               </div>
             </div>
           </div>
@@ -124,8 +124,8 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
           </div>
 
           {/* Thank you message */}
-          <div className="mt-8 text-sm text-gray-500">
-            <p>Thanks for playing Export Game!</p>
+          <div className="mt-8 text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>
+            <p>Thanks for playing Export Hold'em!</p>
             <p>Challenge your friends and test your global trade knowledge.</p>
           </div>
         </div>

@@ -2,95 +2,164 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --poker-light-bg: #fbe4c7;
+  --poker-strong-bg: #891710;
+  --poker-dark-text: #452610;
+  --poker-accent: #F8b935;
+}
+
 @layer base {
   html {
-    font-family: system-ui, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  body {
+    background: var(--poker-strong-bg);
+    color: var(--poker-dark-text);
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-game-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors;
+    @apply font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105;
+    background: var(--poker-accent);
+    color: var(--poker-dark-text);
+    box-shadow: 0 4px 14px rgba(248, 185, 53, 0.3);
+  }
+  
+  .btn-primary:hover {
+    background: #e6a82e;
+    box-shadow: 0 6px 20px rgba(248, 185, 53, 0.4);
   }
   
   .btn-secondary {
-    @apply bg-game-secondary hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors;
+    @apply font-bold py-3 px-6 rounded-lg border-2 transition-all duration-200 transform hover:scale-105;
+    background: transparent;
+    color: var(--poker-accent);
+    border-color: var(--poker-accent);
+  }
+  
+  .btn-secondary:hover {
+    background: var(--poker-accent);
+    color: var(--poker-dark-text);
   }
   
   .card {
-    @apply bg-white shadow-lg rounded-lg p-6 border border-gray-200;
+    background: var(--poker-light-bg);
+    @apply shadow-2xl rounded-xl p-6 border;
+    border-color: #e5c59a;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2), 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .poker-table {
+    background: linear-gradient(135deg, var(--poker-strong-bg) 0%, #6b1409 100%);
+    @apply min-h-screen;
   }
   
   .playing-card {
-    @apply relative bg-white border border-gray-300 cursor-pointer transition-all duration-300 ease-in-out;
+    @apply relative cursor-pointer transition-all duration-300 ease-in-out;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
     width: 80px;
     height: 112px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    border: 2px solid #d4b896;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
     transform-style: preserve-3d;
   }
   
   .playing-card:hover {
-    transform: translateY(-8px) scale(1.05);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25), 0 4px 10px rgba(0, 0, 0, 0.15);
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), 0 6px 15px rgba(248, 185, 53, 0.2);
+    border-color: var(--poker-accent);
     z-index: 10;
   }
   
   .playing-card.selected {
-    @apply border-2 border-blue-500 bg-blue-50;
-    transform: translateY(-12px) scale(1.08);
-    box-shadow: 0 12px 30px rgba(59, 130, 246, 0.3), 0 6px 15px rgba(59, 130, 246, 0.2);
+    background: linear-gradient(145deg, #fff7e6 0%, #fef3d9 100%);
+    border: 3px solid var(--poker-accent);
+    transform: translateY(-15px) scale(1.08);
+    box-shadow: 0 15px 35px rgba(248, 185, 53, 0.4), 0 8px 20px rgba(0, 0, 0, 0.2);
     z-index: 20;
   }
   
   .playing-card.disabled {
-    @apply opacity-50 cursor-not-allowed;
+    @apply opacity-60 cursor-not-allowed;
     transform: none !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+    filter: grayscale(0.5);
   }
   
   .card-hand {
     @apply flex justify-center items-end;
-    perspective: 1000px;
-    min-height: 140px;
-    padding: 20px 0;
+    perspective: 1200px;
+    min-height: 150px;
+    padding: 25px 0;
+    background: radial-gradient(ellipse at center, rgba(248, 185, 53, 0.1) 0%, transparent 70%);
+    border-radius: 20px;
   }
   
   .card-in-hand {
-    margin-right: -15px;
+    margin-right: -18px;
     transform-origin: center bottom;
   }
   
   .card-corner {
     @apply absolute text-xs font-bold;
     line-height: 1;
+    color: var(--poker-dark-text);
   }
   
   .card-corner.top-left {
-    top: 6px;
-    left: 6px;
+    top: 8px;
+    left: 8px;
   }
   
   .card-corner.bottom-right {
-    bottom: 6px;
-    right: 6px;
+    bottom: 8px;
+    right: 8px;
     transform: rotate(180deg);
   }
   
   .card-center {
     @apply absolute inset-0 flex flex-col items-center justify-center text-center;
-    padding: 8px 4px;
+    padding: 10px 6px;
   }
   
   .card-flag {
-    font-size: 24px;
-    margin-bottom: 2px;
+    font-size: 26px;
+    margin-bottom: 3px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
   }
   
   .card-name {
-    font-size: 8px;
-    font-weight: 600;
+    font-size: 9px;
+    font-weight: 700;
     line-height: 1.1;
-    color: #374151;
+    color: var(--poker-dark-text);
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  }
+  
+  .poker-chip {
+    @apply inline-flex items-center justify-center rounded-full font-bold text-sm;
+    background: var(--poker-accent);
+    color: var(--poker-dark-text);
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e6a82e;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+  
+  .poker-progress {
+    @apply w-full rounded-full overflow-hidden;
+    background: rgba(69, 38, 16, 0.3);
+    height: 6px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .poker-progress-bar {
+    @apply h-full transition-all duration-1000 ease-out rounded-full;
+    background: linear-gradient(90deg, var(--poker-accent) 0%, #e6a82e 100%);
+    box-shadow: 0 1px 3px rgba(248, 185, 53, 0.5);
   }
 }

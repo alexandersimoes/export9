@@ -12,7 +12,7 @@ function GamePageContent() {
   const searchParams = useSearchParams()
   const playerName = searchParams.get('name') || ''
   
-  const { gameState, gameStatus, error, joinGame, playCard, playCPU, reconnect } = useSocket()
+  const { gameState, gameStatus, error, joinGame, playCard, playCPU, quitGame, reconnect } = useSocket()
 
   useEffect(() => {
     if (playerName && gameStatus === 'connecting') {
@@ -59,6 +59,7 @@ function GamePageContent() {
         gameStatus={gameStatus}
         playerName={playerName}
         onPlayCard={playCard}
+        onQuitGame={quitGame}
         error={error}
       />
     )
