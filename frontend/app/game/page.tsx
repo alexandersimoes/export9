@@ -67,11 +67,11 @@ function GamePageContent() {
 
   // Default loading state
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-purple-900">
-      <div className="card">
+    <div className="poker-table flex items-center justify-center p-4">
+      <div className="card w-full max-w-[800px] mx-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-game-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Connecting to game...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--poker-accent)' }}></div>
+          <p style={{ color: 'var(--poker-dark-text)' }}>Connecting to game...</p>
         </div>
       </div>
     </div>
@@ -81,11 +81,11 @@ function GamePageContent() {
 export default function GamePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-purple-900">
-        <div className="card">
+      <div className="poker-table flex items-center justify-center p-4">
+        <div className="card w-full max-w-[800px] mx-4">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-game-primary mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--poker-accent)' }}></div>
+            <p style={{ color: 'var(--poker-dark-text)' }}>Loading...</p>
           </div>
         </div>
       </div>

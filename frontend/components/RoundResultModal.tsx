@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { RoundResult } from '@/types/game'
-import { formatExportValue } from '@/lib/utils'
+import { formatExportValue, formatExportValueWithPrecision } from '@/lib/utils'
 
 interface RoundResultModalProps {
   roundResult: RoundResult | null
@@ -36,6 +36,24 @@ export default function RoundResultModal({ roundResult, playerName }: RoundResul
   const currentPlayer = roundResult.players.find(p => p.name === playerName)
   const isWinner = currentPlayer?.is_round_winner || false
   const isTie = roundResult.is_tie
+
+  // Check if we need smart precision (same export values but different countries)
+  const playersWithCards = roundResult.players.filter(p => p.card_played)
+  const needsSmartPrecision = playersWithCards.length === 2 && 
+    playersWithCards[0].card_played!.export_value === playersWithCards[1].card_played!.export_value &&
+    playersWithCards[0].card_played!.country_code !== playersWithCards[1].card_played!.country_code
+
+  // Create a map for formatted values
+  const formattedValueMap = new Map()
+  
+  if (needsSmartPrecision) {
+    // Use smart precision formatting
+    const exportValues = playersWithCards.map(p => p.card_played!.export_value)
+    const formattedValues = formatExportValueWithPrecision(exportValues)
+    playersWithCards.forEach((player, index) => {
+      formattedValueMap.set(player.card_played!.export_value + '_' + player.card_played!.country_code, formattedValues[index])
+    })
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -93,7 +111,10 @@ export default function RoundResultModal({ roundResult, playerName }: RoundResul
                   <div className="text-right">
                     {player.card_played && (
                       <div className="text-lg font-bold" style={{ color: 'var(--poker-accent)' }}>
-                        {formatExportValue(player.card_played.export_value)}
+                        {needsSmartPrecision 
+                          ? formattedValueMap.get(player.card_played.export_value + '_' + player.card_played.country_code)
+                          : formatExportValue(player.card_played.export_value)
+                        }
                       </div>
                     )}
                     <div className="text-xs" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>exports</div>

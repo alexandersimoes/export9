@@ -82,7 +82,7 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
                             {player.name === playerName && <span className="ml-2" style={{ color: 'var(--poker-accent)' }}>(You)</span>}
                           </div>
                           <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
-                            {isWinner ? 'Winner' : '2nd Place'}
+                            {isTie ? 'Draw' : (isWinner ? 'Winner' : '2nd Place')}
                           </div>
                         </div>
                       </div>
