@@ -58,35 +58,41 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
             <div className="space-y-4">
               {gameState.players
                 .sort((a, b) => b.score - a.score)
-                .map((player, index) => (
-                <div 
-                  key={player.id} 
-                  className="flex justify-between items-center p-4 rounded-lg border-2"
-                  style={{
-                    backgroundColor: player.name === playerName ? '#fff7e6' : '#f9f7f4',
-                    borderColor: player.name === playerName ? 'var(--poker-accent)' : '#d4b896'
-                  }}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold text-lg" style={{ color: 'var(--poker-dark-text)' }}>
-                        {player.name}
-                        {player.name === playerName && <span className="ml-2" style={{ color: 'var(--poker-accent)' }}>(You)</span>}
+                .map((player, index) => {
+                  // Check if this is a tie (both players have same score)
+                  const isTie = gameState.players[0].score === gameState.players[1].score
+                  const isWinner = isTie || index === 0
+                  
+                  return (
+                    <div 
+                      key={player.id} 
+                      className="flex justify-between items-center p-4 rounded-lg border-2"
+                      style={{
+                        backgroundColor: player.name === playerName ? '#fff7e6' : '#f9f7f4',
+                        borderColor: player.name === playerName ? 'var(--poker-accent)' : '#d4b896'
+                      }}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="text-2xl">
+                          {isTie ? '🥇' : (index === 0 ? '🥇' : '🥈')}
+                        </div>
+                        <div className="text-left">
+                          <div className="font-bold text-lg" style={{ color: 'var(--poker-dark-text)' }}>
+                            {player.name}
+                            {player.name === playerName && <span className="ml-2" style={{ color: 'var(--poker-accent)' }}>(You)</span>}
+                          </div>
+                          <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
+                            {isWinner ? 'Winner' : '2nd Place'}
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
-                        {index === 0 ? 'Winner' : `${index + 1}${index === 1 ? 'nd' : 'rd'} Place`}
+                      <div className="text-right">
+                        <div className="poker-chip text-xl">{player.score}</div>
+                        <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>rounds won</div>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="poker-chip text-xl">{player.score}</div>
-                    <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>rounds won</div>
-                  </div>
-                </div>
-              ))}
+                  )
+                })}
             </div>
           </div>
 
