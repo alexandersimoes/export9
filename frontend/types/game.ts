@@ -19,6 +19,7 @@ export interface Player {
   name: string;
   score: number;
   cards_remaining?: number;
+  is_cpu?: boolean;
 }
 
 export interface GameState {
