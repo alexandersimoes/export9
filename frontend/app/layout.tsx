@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { UserProvider } from '@/contexts/UserContext'
 
 export const metadata: Metadata = {
   title: 'Export Game - Real-time Multiplayer',
@@ -13,8 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50 min-h-screen">
-        <main>{children}</main>
+      <body className="poker-table min-h-screen">
+        <UserProvider>
+          <main>{children}</main>
+        </UserProvider>
       </body>
     </html>
   )

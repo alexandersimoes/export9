@@ -1,24 +1,31 @@
 'use client'
 
 import { useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useSocket } from '@/lib/useSocket'
+import { useUser } from '@/contexts/UserContext'
 import GameBoard from '@/components/GameBoard'
 import WaitingRoom from '@/components/WaitingRoom'
 import GameResults from '@/components/GameResults'
 import ErrorDisplay from '@/components/ErrorDisplay'
 
 function GamePageContent() {
-  const searchParams = useSearchParams()
-  const playerName = searchParams.get('name') || ''
+  const router = useRouter()
+  const { user, isLoading } = useUser()
   
   const { gameState, gameStatus, error, joinGame, playCard, playCPU, quitGame, reconnect } = useSocket()
 
   useEffect(() => {
-    if (playerName && gameStatus === 'connecting') {
-      joinGame(playerName)
+    if (!isLoading && !user) {
+      // Redirect to home if no user
+      router.push('/')
+      return
     }
-  }, [playerName, gameStatus, joinGame])
+    
+    if (user && gameStatus === 'connecting') {
+      joinGame(user.display_name, user.id)
+    }
+  }, [user, isLoading, gameStatus, joinGame, router])
 
   // Show error state
   if (error && gameStatus === 'error') {
@@ -34,7 +41,7 @@ function GamePageContent() {
   if (gameStatus === 'connecting' || gameStatus === 'waiting_for_opponent') {
     return (
       <WaitingRoom 
-        playerName={playerName}
+        playerName={user?.display_name || ''}
         status={gameStatus}
         onPlayCPU={playCPU}
       />
@@ -46,7 +53,7 @@ function GamePageContent() {
     return (
       <GameResults 
         gameState={gameState}
-        playerName={playerName}
+        playerName={user?.display_name || ''}
       />
     )
   }
@@ -57,7 +64,7 @@ function GamePageContent() {
       <GameBoard 
         gameState={gameState}
         gameStatus={gameStatus}
-        playerName={playerName}
+        playerName={user?.display_name || ''}
         onPlayCard={playCard}
         onQuitGame={quitGame}
         error={error}

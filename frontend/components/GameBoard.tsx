@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { GameState, GameStatus, Card } from '@/types/game'
 import RoundResultModal from './RoundResultModal'
 import { getFlagEmoji, getProductEmoji } from '@/lib/utils'
+import { useUser } from '@/contexts/UserContext'
+import UserProfile from './UserProfile'
 
 interface GameBoardProps {
   gameState: GameState
@@ -157,34 +159,53 @@ export default function GameBoard({
     <div className="poker-table p-4 flex justify-center">
       <div className="w-full max-w-[800px]">
       {/* Header */}
-      <div className="mb-3 rounded-lg flex items-center justify-between overflow-hidden" style={{ }}>
+      <div className="mb-3 rounded-lg overflow-hidden">
+        {/* Mobile Layout */}
+        <div className="sm:hidden flex items-center justify-between px-2">
+          <div className="text-sm font-semibold" style={{ color: '#fbe4c7', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
+            {gameState.current_round}/{gameState.total_rounds}
+          </div>
+          <img 
+            src="/logo.png" 
+            alt="Export Holdem" 
+            className="h-20 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+            style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))' }}
+            onClick={handleLogoClick}
+          />
+          <div className="w-[60px]"></div>
+        </div>
 
-        <div className="pl-3">
-          <div className="hidden sm:block text-left">
-            <div className="text-lg font-bold" style={{ color: '#fbe4c7', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
-              Round {gameState.current_round}
+        {/* Desktop Layout */}
+        <div className="hidden sm:grid grid-cols-3 items-center gap-4">
+          <div className="justify-self-start pl-3 min-w-0">
+            <div className="text-left">
+              <div className="text-lg font-bold break-words" style={{ color: '#fbe4c7', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
+                Round {gameState.current_round}
+              </div>
+              <div className="break-words">
+                <UserProfile compact />
+              </div>
             </div>
           </div>
-        </div>
-        
-        <img 
-          src="/logo.png" 
-          alt="Export Holdem" 
-          className="h-24 w-auto cursor-pointer hover:opacity-80 transition-opacity"
-          style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))' }}
-          onClick={handleLogoClick}
-        />
-        
-        <div className="pr-3">
-          <div className="hidden sm:block text-right">
-            {gameState.current_product && (
-              <div className="text-base font-semibold" style={{ color: '#fbe4c7', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
-                {getProductEmoji(gameState.current_product.id)} {gameState.current_product.name}
-              </div>
-            )}
+          
+          <div className="justify-self-center">
+            <img 
+              src="/logo.png" 
+              alt="Export Holdem" 
+              className="h-24 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))' }}
+              onClick={handleLogoClick}
+            />
           </div>
-          <div className="sm:hidden text-sm text-right font-semibold" style={{ color: '#fbe4c7', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
-            {gameState.current_round}/{gameState.total_rounds}
+          
+          <div className="justify-self-end pr-3 min-w-0">
+            <div className="text-right">
+              {gameState.current_product && (
+                <div className="text-base font-semibold break-words" style={{ color: '#fbe4c7', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
+                  {getProductEmoji(gameState.current_product.id)} {gameState.current_product.name}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -208,15 +229,17 @@ export default function GameBoard({
         backgroundColor: 'rgba(251, 228, 199, 0.3)', 
         border: '1px solid rgba(212, 184, 150, 0.5)' 
       }}>
-        <div className="flex items-center justify-center gap-6">
+        <div className="flex items-center justify-center gap-2 sm:gap-6 px-2">
           {gameState.players.map((player, index) => (
-            <div key={player.id} className="flex items-center gap-2">
-              {player.name === playerName && '👤'}
-              {player.name !== playerName && (player.is_cpu ? '🤖' : '🎭')}
-              <span className="font-semibold text-sm" style={{ color: 'var(--poker-dark-text)' }}>
+            <div key={player.id} className="flex items-center gap-1 sm:gap-2 min-w-0">
+              <div className="flex-shrink-0">
+                {player.name === playerName && '👤'}
+                {player.name !== playerName && (player.is_cpu ? '🤖' : '🎭')}
+              </div>
+              <span className="font-semibold text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none" style={{ color: 'var(--poker-dark-text)' }}>
                 {player.name}
               </span>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ 
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm flex-shrink-0" style={{ 
                 backgroundColor: 'var(--poker-accent)', 
                 color: 'var(--poker-dark-text)',
                 border: '2px solid #e6a82e',
@@ -225,7 +248,7 @@ export default function GameBoard({
                 {player.score || 0}
               </div>
               {index === 0 && (
-                <span className="text-sm font-medium mx-2" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>vs</span>
+                <span className="text-xs sm:text-sm font-medium mx-1 sm:mx-2 flex-shrink-0" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>vs</span>
               )}
             </div>
           ))}

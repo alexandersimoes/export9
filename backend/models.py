@@ -206,19 +206,36 @@ class GameManager:
   def find_match(self) -> Optional[Game]:
     """Find or create a game for waiting players"""
     if len(self.waiting_players) >= 2:
-      # Create new game with 2 waiting players
-      game = self.create_game()
+      # Find two different users (avoid matching same user with themselves)
+      player1 = None
+      player2 = None
+      
+      for i, player in enumerate(self.waiting_players):
+        if player1 is None:
+          player1 = player
+        elif getattr(player, 'user_id', None) != getattr(player1, 'user_id', None):
+          # Found a different user
+          player2 = player
+          break
+      
+      # Only create game if we found 2 different users
+      if player1 and player2:
+        # Create new game
+        game = self.create_game()
+        
+        # Remove players from waiting list and add to game
+        self.waiting_players.remove(player1)
+        self.waiting_players.remove(player2)
+        
+        game.add_player(player1)
+        game.add_player(player2)
+        self.player_game_map[player1.id] = game.id
+        self.player_game_map[player2.id] = game.id
 
-      # Add first 2 players to the game
-      for _ in range(2):
-        player = self.waiting_players.pop(0)
-        game.add_player(player)
-        self.player_game_map[player.id] = game.id
+        # Deal cards to players
+        self._deal_cards(game)
 
-      # Deal cards to players
-      self._deal_cards(game)
-
-      return game
+        return game
     return None
 
   def create_cpu_game(self, human_player: Player) -> Game:

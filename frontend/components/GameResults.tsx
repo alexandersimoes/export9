@@ -1,24 +1,122 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { GameState } from '@/types/game'
+import { useUser } from '@/contexts/UserContext'
+import { updateGuestElo, getGuestEloData } from '@/lib/guestElo'
 
 interface GameResultsProps {
   gameState: GameState
   playerName: string
 }
 
+interface EloChange {
+  change: number
+  newElo: number
+}
+
 export default function GameResults({ gameState, playerName }: GameResultsProps) {
   const router = useRouter()
+  const { user, isGuest, refreshUser, refreshGuestData } = useUser()
+  const [eloChange, setEloChange] = useState<EloChange | null>(null)
+  const [processingElo, setProcessingElo] = useState(true)
+  
+  // Use game ID + player scores as unique identifier to prevent duplicate processing
+  const gameResultId = `${gameState.game_id}-${gameState.players.map(p => p.score).join('-')}`
   
   const currentPlayer = gameState.players.find(p => p.name === playerName)
   const opponent = gameState.players.find(p => p.name !== playerName)
   
   const isWinner = currentPlayer && opponent && currentPlayer.score > opponent.score
   const isDraw = currentPlayer && opponent && currentPlayer.score === opponent.score
+
+  // Process ELO changes
+  useEffect(() => {
+    const processEloChanges = async () => {
+      if (!user || !currentPlayer || !opponent) {
+        setProcessingElo(false)
+        return
+      }
+      
+      // Check if we've already processed this game result
+      const processedGames = JSON.parse(localStorage.getItem('export9_processed_games') || '[]')
+      if (processedGames.includes(gameResultId)) {
+        setProcessingElo(false)
+        return
+      }
+
+      try {
+        if (isGuest) {
+          // Handle guest ELO update locally
+          const currentGuestData = getGuestEloData()
+          if (currentGuestData) {
+            const previousElo = currentGuestData.elo_rating
+            
+            const updatedGuestData = updateGuestElo(
+              opponent.name,
+              1200, // Default opponent ELO for now
+              currentPlayer.score,
+              opponent.score
+            )
+            
+            if (updatedGuestData) {
+              setEloChange({
+                change: updatedGuestData.elo_rating - previousElo,
+                newElo: updatedGuestData.elo_rating
+              })
+              
+              // Refresh guest data in context to update UI
+              refreshGuestData()
+            }
+          }
+        } else {
+          // Handle authenticated user ELO update via API
+          const opponentUser = gameState.players.find(p => p.name !== playerName)
+          if (opponentUser && 'user_id' in opponentUser) {
+            const apiUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://export9.oec.world'
+            const response = await fetch(`${apiUrl}/api/games/result`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                player1_id: user.id,
+                player2_id: (opponentUser as any).user_id,
+                player1_score: currentPlayer.score,
+                player2_score: opponent.score
+              })
+            })
+            
+            if (response.ok) {
+              const result = await response.json()
+              setEloChange({
+                change: result.player1_elo_change,
+                newElo: user.elo_rating + result.player1_elo_change
+              })
+              
+              // Refresh user data
+              await refreshUser()
+            }
+          }
+        }
+        // Mark this game as processed to prevent duplicate updates
+        const processedGames = JSON.parse(localStorage.getItem('export9_processed_games') || '[]')
+        processedGames.push(gameResultId)
+        // Keep only last 50 processed games to prevent unlimited growth
+        const trimmedProcessedGames = processedGames.slice(-50)
+        localStorage.setItem('export9_processed_games', JSON.stringify(trimmedProcessedGames))
+        
+      } catch (error) {
+        console.error('Failed to process ELO changes:', error)
+      } finally {
+        setProcessingElo(false)
+      }
+    }
+
+    processEloChanges()
+  }, [user, currentPlayer, opponent, isGuest, playerName, gameState.players, refreshUser, refreshGuestData, gameResultId])
   
   const handlePlayAgain = () => {
-    router.push(`/?name=${encodeURIComponent(playerName)}`)
+    router.push('/')
   }
 
   return (
@@ -95,6 +193,47 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
                 })}
             </div>
           </div>
+
+          {/* ELO Change Display */}
+          {eloChange && !processingElo && (
+            <div className="mb-6 rounded-lg p-4" style={{ 
+              backgroundColor: eloChange.change >= 0 ? '#e8f5e8' : '#fde8e8', 
+              border: `2px solid ${eloChange.change >= 0 ? '#4ade80' : '#f87171'}`
+            }}>
+              <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--poker-dark-text)' }}>
+                ELO Rating Update
+              </h3>
+              <div className="flex justify-between items-center">
+                <div className="text-left">
+                  <div className="text-sm opacity-75" style={{ color: 'var(--poker-dark-text)' }}>
+                    {eloChange.change >= 0 ? 'Rating Gained' : 'Rating Lost'}
+                  </div>
+                  <div className="text-2xl font-bold" style={{ 
+                    color: eloChange.change >= 0 ? '#22c55e' : '#ef4444'
+                  }}>
+                    {eloChange.change >= 0 ? '+' : ''}{eloChange.change}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm opacity-75" style={{ color: 'var(--poker-dark-text)' }}>
+                    New Rating
+                  </div>
+                  <div className="text-2xl font-bold" style={{ color: 'var(--poker-accent)' }}>
+                    {eloChange.newElo}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {processingElo && (
+            <div className="mb-6 rounded-lg p-4 text-center" style={{ backgroundColor: '#f9f7f4', border: '1px solid #d4b896' }}>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-poker-strong-bg mx-auto mb-2"></div>
+              <p className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
+                Updating your ELO rating...
+              </p>
+            </div>
+          )}
 
           {/* Game Stats */}
           <div className="mb-8 rounded-lg p-6" style={{ backgroundColor: '#f9f7f4', border: '1px solid #d4b896' }}>

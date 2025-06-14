@@ -53,9 +53,22 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
         """Handle player joining game"""
         try:
             player_name = data.get('name', '').strip()
+            user_id = data.get('user_id')
             if not player_name:
                 await sio.emit('error', {'message': 'Name is required'}, room=sid)
                 return
+            
+            # Check if this user is already in a game or waiting
+            if user_id:
+                # Remove any existing player with same user_id from waiting queue
+                game_manager.waiting_players = [p for p in game_manager.waiting_players if getattr(p, 'user_id', None) != user_id]
+                
+                # Check if user is already in an active game
+                for game in game_manager.games.values():
+                    for game_player in game.players:
+                        if getattr(game_player, 'user_id', None) == user_id:
+                            await sio.emit('error', {'message': 'You are already in a game'}, room=sid)
+                            return
             
             # Create new player
             player = Player(
@@ -64,6 +77,10 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
                 socket_id=sid,
                 state=PlayerState.WAITING
             )
+            
+            # Add user_id to player object if provided
+            if user_id:
+                player.user_id = user_id
             
             # Add to waiting queue
             game_manager.add_waiting_player(player)
