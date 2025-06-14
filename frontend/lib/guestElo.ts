@@ -3,7 +3,7 @@
  * For users who play without signing in to OEC
  */
 
-interface GuestEloData {
+export interface GuestEloData {
   elo_rating: number
   games_played: number
   wins: number
