@@ -69,7 +69,7 @@ export function getFlagEmoji(countryCode: string): string {
     'FR': '🇫🇷', 'KR': '🇰🇷', 'IT': '🇮🇹', 'CA': '🇨🇦', 'ES': '🇪🇸',
     'IN': '🇮🇳', 'NL': '🇳🇱', 'SA': '🇸🇦', 'CH': '🇨🇭', 'AU': '🇦🇺',
     'IE': '🇮🇪', 'MX': '🇲🇽', 'RU': '🇷🇺', 'TH': '🇹🇭', 'MY': '🇲🇾',
-    'BR': '🇧🇷'
+    'BR': '🇧🇷', 'CL': '🇨🇱'
   }
   return flags[countryCode] || '🏳️'
 }
@@ -132,7 +132,8 @@ export function getProductEmoji(productId: string): string {
     'refined_oil': '⛽',
     'auto_parts': '🔧',
     'drones': '🚁',
-    'corn': '🌽'
+    'corn': '🌽',
+    'cherries': '🍒'
   }
   return productEmojis[productId] || '📦'
 }

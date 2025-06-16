@@ -6,6 +6,7 @@ import { GameState, GameStatus, Card } from '@/types/game'
 import RoundResultModal from './RoundResultModal'
 import { getFlagEmoji, getProductEmoji } from '@/lib/utils'
 import { useUser } from '@/contexts/UserContext'
+import { getUserCountryCode } from '@/lib/geolocation'
 import UserProfile from './UserProfile'
 
 interface GameBoardProps {
@@ -102,6 +103,18 @@ export default function GameBoard({
 
   const currentPlayer = gameState.players.find(p => p.name === playerName)
   const opponent = gameState.players.find(p => p.name !== playerName)
+
+  // Helper function to get player flag
+  const getPlayerFlag = (player: any) => {
+    if (player.name === playerName) {
+      // For current player, use their geolocation data
+      const userCountryCode = getUserCountryCode()
+      return userCountryCode ? getFlagEmoji(userCountryCode) : '🌐'
+    } else {
+      // For opponent, show world emoji (we don't have their geolocation)
+      return '🌐'
+    }
+  }
 
   // Show round result modal when round ends
   React.useEffect(() => {
@@ -233,8 +246,7 @@ export default function GameBoard({
           {gameState.players.map((player, index) => (
             <div key={player.id} className="flex items-center gap-1 sm:gap-2 min-w-0">
               <div className="flex-shrink-0">
-                {player.name === playerName && '👤'}
-                {player.name !== playerName && (player.is_cpu ? '🤖' : '🎭')}
+              {getPlayerFlag(player)}
               </div>
               <span className="font-semibold text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none" style={{ color: 'var(--poker-dark-text)' }}>
                 {player.name}
@@ -438,6 +450,7 @@ export default function GameBoard({
         <RoundResultModal
           roundResult={gameState.lastRoundResult}
           playerName={playerName}
+          currentProduct={gameState.current_product}
         />
       )}
       </div>

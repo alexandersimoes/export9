@@ -47,7 +47,9 @@ class OECClient:
       "eurus": OECCountry("eurus", "Russia"),
       "astha": OECCountry("astha", "Thailand"),
       "asmys": OECCountry("asmys", "Malaysia"),
-      "sabra": OECCountry("sabra", "Brazil")
+      "sabra": OECCountry("sabra", "Brazil"),
+      "sachl": OECCountry("sachl", "Chile")
+
   }
 
   # OEC product mappings
@@ -69,7 +71,8 @@ class OECClient:
       "41701": OECProduct("41701", "Raw Sugar", "food"),
       "42208": OECProduct("42208", "Hard Liquor", "beverages"),
       "42203": OECProduct("42203", "Beer", "beverages"),
-      "178806": OECProduct("178806", "Drones", "electronics")
+      "178806": OECProduct("178806", "Drones", "electronics"),
+      "2080920": OECProduct("2080920", "Cherries", "agriculture")
   }
 
   def __init__(self):

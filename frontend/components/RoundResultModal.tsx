@@ -1,15 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { RoundResult } from '@/types/game'
-import { formatExportValue, formatExportValueWithPrecision, getFlagEmoji } from '@/lib/utils'
+import { RoundResult, Product } from '@/types/game'
+import { formatExportValue, formatExportValueWithPrecision, getFlagEmoji, getProductEmoji } from '@/lib/utils'
 
 interface RoundResultModalProps {
   roundResult: RoundResult | null
   playerName: string
+  currentProduct?: Product
 }
 
-export default function RoundResultModal({ roundResult, playerName }: RoundResultModalProps) {
+export default function RoundResultModal({ roundResult, playerName, currentProduct }: RoundResultModalProps) {
   const [timeLeft, setTimeLeft] = useState(5)
 
   useEffect(() => {
@@ -80,7 +81,14 @@ export default function RoundResultModal({ roundResult, playerName }: RoundResul
                 </h2>
               </div>
             )}
-            <p style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>Round {roundResult.round_number} Results</p>
+            <div style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
+              <p>Round {roundResult.round_number} Results</p>
+              {currentProduct && (
+                <p className="text-sm mt-1">
+                  {getProductEmoji(currentProduct.id)} {currentProduct.name}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Cards played and export values */}

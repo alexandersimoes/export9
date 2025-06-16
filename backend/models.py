@@ -145,7 +145,8 @@ class GameManager:
         ("RU", "Russia", "eurus"),
         ("TH", "Thailand", "astha"),
         ("MY", "Malaysia", "asmys"),
-        ("BR", "Brazil", "sabra")
+        ("BR", "Brazil", "sabra"),
+        ("CL", "Chile", "sachl")
     ]
     self.countries = [Country(code=code, name=name, oec_id=oec_id)
                       for code, name, oec_id in countries_data]
@@ -171,7 +172,8 @@ class GameManager:
         ("refined_oil", "Refined Petroleum", "energy", "52710"),
         ("auto_parts", "Motor Vehicle Parts", "automotive", "178708"),
         ("drones", "Drones", "electronics", "178806"),
-        ("corn", "Corn", "agriculture", "21005")
+        ("corn", "Corn", "agriculture", "21005"),
+        ("cherries", "Cherries", "agriculture", "2080920")
     ]
     self.products = [Product(id=id, name=name, category=category, oec_id=oec_id)
                      for id, name, category, oec_id in products_data]
@@ -209,7 +211,7 @@ class GameManager:
       # Find two different users (avoid matching same user with themselves)
       player1 = None
       player2 = None
-      
+
       for i, player in enumerate(self.waiting_players):
         if player1 is None:
           player1 = player
@@ -217,16 +219,16 @@ class GameManager:
           # Found a different user
           player2 = player
           break
-      
+
       # Only create game if we found 2 different users
       if player1 and player2:
         # Create new game
         game = self.create_game()
-        
+
         # Remove players from waiting list and add to game
         self.waiting_players.remove(player1)
         self.waiting_players.remove(player2)
-        
+
         game.add_player(player1)
         game.add_player(player2)
         self.player_game_map[player1.id] = game.id

@@ -3,6 +3,8 @@
 import React from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { getEloCategory, getEloColor, calculateWinRate } from '@/lib/guestElo'
+import { getUserCountryCode } from '@/lib/geolocation'
+import { getFlagEmoji } from '@/lib/utils'
 
 interface UserProfileProps {
   compact?: boolean
@@ -22,6 +24,8 @@ export default function UserProfile({ compact = false }: UserProfileProps) {
   const eloCategory = getEloCategory(eloRating)
   const eloColor = getEloColor(eloRating)
   const winRate = calculateWinRate(wins, losses, draws)
+  const userCountryCode = getUserCountryCode()
+  const userFlag = userCountryCode ? getFlagEmoji(userCountryCode) : '🌐'
 
   if (compact) {
     return (
@@ -31,7 +35,10 @@ export default function UserProfile({ compact = false }: UserProfileProps) {
             className="w-3 h-3 rounded-full"
             style={{ backgroundColor: eloColor }}
           />
-          <span className="text-white font-medium">{user.display_name}</span>
+          <span className="text-white font-medium">
+            <span className="mr-1">{userFlag}</span>
+            {user.display_name}
+          </span>
         </div>
         <div className="text-white font-bold bg-poker-dark-text bg-opacity-80 px-2 py-1 rounded">
           {eloRating}
@@ -52,7 +59,10 @@ export default function UserProfile({ compact = false }: UserProfileProps) {
             style={{ backgroundColor: eloColor }}
           />
           <div>
-            <h3 className="font-bold text-poker-dark-text">{user.display_name}</h3>
+            <h3 className="font-bold text-poker-dark-text">
+              <span className="mr-2">{userFlag}</span>
+              {user.display_name}
+            </h3>
             <p className="text-xs text-poker-dark-text opacity-60">
               {isGuest ? 'Guest Player' : 'OEC Account'}
             </p>

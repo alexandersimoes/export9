@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { getGuestEloData, initializeGuestElo, hasGuestEloData, GuestEloData } from '@/lib/guestElo'
+import { initializeUserGeolocation, GeolocationData } from '@/lib/geolocation'
 
 interface User {
   id: number
@@ -127,6 +128,11 @@ export function UserProvider({ children }: UserProviderProps) {
         setUser(userData)
         setGuestData(null) // Clear guest data
         
+        // Initialize geolocation tracking for new authenticated users
+        initializeUserGeolocation().catch(error => 
+          console.warn('Geolocation initialization failed:', error)
+        )
+        
         // Store user session
         localStorage.setItem('export9_user_id', userData.id.toString())
         localStorage.setItem('export9_is_guest', 'false')
@@ -163,6 +169,11 @@ export function UserProvider({ children }: UserProviderProps) {
         // Initialize guest ELO data locally
         const guestData = initializeGuestElo(userData.username, userData.display_name)
         setGuestData(guestData)
+        
+        // Initialize geolocation tracking for new guest users
+        initializeUserGeolocation().catch(error => 
+          console.warn('Geolocation initialization failed:', error)
+        )
         
         // Store session
         localStorage.setItem('export9_user_id', userData.id.toString())
