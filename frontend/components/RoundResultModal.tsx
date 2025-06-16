@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { RoundResult } from '@/types/game'
-import { formatExportValue, formatExportValueWithPrecision } from '@/lib/utils'
+import { formatExportValue, formatExportValueWithPrecision, getFlagEmoji } from '@/lib/utils'
 
 interface RoundResultModalProps {
   roundResult: RoundResult | null
@@ -103,7 +103,7 @@ export default function RoundResultModal({ roundResult, playerName }: RoundResul
                     </div>
                     {player.card_played && (
                       <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
-                        {player.card_played.country_name}
+                        {getFlagEmoji(player.card_played.country_code)} {player.card_played.country_name}
                         {player.card_played.country_code === roundResult.winner_country && ' (Winning choice!)'}
                       </div>
                     )}
