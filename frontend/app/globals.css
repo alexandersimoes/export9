@@ -47,7 +47,7 @@
   
   .card {
     background: var(--poker-light-bg);
-    @apply shadow-2xl rounded-xl p-6 border;
+    @apply shadow-2xl rounded-xl p-4 border;
     border-color: #e5c59a;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2), 0 4px 10px rgba(0, 0, 0, 0.1);
   }

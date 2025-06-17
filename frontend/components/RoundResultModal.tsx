@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { RoundResult, Product } from '@/types/game'
 import { formatExportValue, formatExportValueWithPrecision, getFlagEmoji, getProductEmoji } from '@/lib/utils'
 
+const TIME_BETWEEN_ROUNDS = 5
+
 interface RoundResultModalProps {
   roundResult: RoundResult | null
   playerName: string
@@ -11,13 +13,13 @@ interface RoundResultModalProps {
 }
 
 export default function RoundResultModal({ roundResult, playerName, currentProduct }: RoundResultModalProps) {
-  const [timeLeft, setTimeLeft] = useState(5)
+  const [timeLeft, setTimeLeft] = useState(TIME_BETWEEN_ROUNDS)
 
   useEffect(() => {
     if (!roundResult) return
 
     // Reset timer when new round result comes in
-    setTimeLeft(5)
+    setTimeLeft(TIME_BETWEEN_ROUNDS)
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -61,21 +63,21 @@ export default function RoundResultModal({ roundResult, playerName, currentProdu
       <div className="card max-w-lg w-full mx-4">
         <div className="text-center">
           {/* Winner announcement */}
-          <div className="mb-6">
+          <div className="mb-4">
             {isTie ? (
               <div>
-                <div className="text-6xl mb-2">🤝</div>
+                <div className="text-3xl mb-1">🤝</div>
                 <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--poker-dark-text)' }}>It's a Tie!</h2>
                 <p style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Both players chose the winning country!</p>
               </div>
             ) : isWinner ? (
               <div>
-                <div className="text-6xl mb-2">🏆</div>
+                <div className="text-3xl mb-1">🏆</div>
                 <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--poker-accent)' }}>You Won This Round!</h2>
               </div>
             ) : (
               <div>
-                <div className="text-6xl mb-2">😔</div>
+                <div className="text-3xl mb-1">😔</div>
                 <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--poker-dark-text)' }}>
                   {roundResult.winner_name} Won This Round
                 </h2>

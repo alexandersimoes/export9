@@ -127,7 +127,7 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
           <div className="mb-8">
             {isWinner && (
               <div className="mb-4">
-                <div className="text-6xl mb-2">🏆</div>
+                <div className="text-4xl mb-2">🏆</div>
                 <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--poker-accent)' }}>You Won!</h1>
                 <p className="text-lg" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Congratulations on your victory!</p>
               </div>
@@ -135,7 +135,7 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
             
             {!isWinner && !isDraw && (
               <div className="mb-4">
-                <div className="text-6xl mb-2">😔</div>
+                <div className="text-4xl mb-2">😔</div>
                 <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--poker-dark-text)' }}>You Lost</h1>
                 <p className="text-lg" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Better luck next time!</p>
               </div>
@@ -143,7 +143,7 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
             
             {isDraw && (
               <div className="mb-4">
-                <div className="text-6xl mb-2">🤝</div>
+                <div className="text-4xl mb-2">🤝</div>
                 <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--poker-accent)' }}>It's a Draw!</h1>
                 <p className="text-lg" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>What an evenly matched game!</p>
               </div>

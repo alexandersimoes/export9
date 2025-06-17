@@ -33,7 +33,7 @@ function HomeContent() {
 
   if (isLoading) {
     return (
-      <div className="poker-table flex items-center justify-center p-4">
+      <div className="poker-table flex items-center justify-center p-2">
         <div className="card w-full max-w-[800px] mx-4">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-poker-strong-bg mx-auto mb-4"></div>
@@ -51,11 +51,11 @@ function HomeContent() {
       )}
       
       {!showOnboarding && (
-        <div className="poker-table flex items-center justify-center p-4">
+        <div className="poker-table flex items-center justify-center p-2">
         <div className="card w-full max-w-[800px] mx-4">
           <div className="text-center mb-8">
             {/* Logo */}
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-3">
               <img 
                 src="/logo.png" 
                 alt="Export Holdem" 
@@ -64,8 +64,8 @@ function HomeContent() {
               />
             </div>
             
-            <p className="text-lg" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>
-              Test your knowledge of global trade exports in this real-time multiplayer game
+            <p className="text-md" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>
+              Test your knowledge of global trade in this real-time multiplayer game
             </p>
           </div>
           

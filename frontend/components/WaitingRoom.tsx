@@ -38,7 +38,7 @@ export default function WaitingRoom({ playerName, status, onPlayCPU }: WaitingRo
       <div className="card w-full max-w-[800px] mx-4">
         <div className="text-center">
           <div className="mb-6">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--poker-strong-bg)' }}></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--poker-strong-bg)' }}></div>
             <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--poker-dark-text)' }}>
               Welcome, {playerName}!
             </h2>
@@ -46,7 +46,7 @@ export default function WaitingRoom({ playerName, status, onPlayCPU }: WaitingRo
 
           {status === 'connecting' && (
             <div>
-              <p className="text-lg mb-4" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Connecting to game server...</p>
+              <p className="text-lg mb-2" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Connecting to game server...</p>
               <div className="flex justify-center space-x-1">
                 <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--poker-strong-bg)' }}></div>
                 <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--poker-strong-bg)', animationDelay: '0.1s' }}></div>
