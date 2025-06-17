@@ -345,15 +345,12 @@ export default function GameBoard({
             })}
           </div>
           
-          <div className="text-center mt-6">
+          <div className="text-center mt-4">
             {selectedCard ? (
               <div className="space-y-3">
                 <div className="rounded-lg p-3 border-2" style={{ backgroundColor: '#fff7e6', borderColor: 'var(--poker-accent)' }}>
-                  <p className="text-sm mb-2" style={{ color: 'var(--poker-dark-text)' }}>
+                  <p className="text-sm" style={{ color: 'var(--poker-dark-text)' }}>
                     🃏 Selected: <strong>{gameState.your_cards.find(c => c.country_code === selectedCard)?.country_name}</strong>
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
-                    You can change your selection anytime before playing your card
                   </p>
                 </div>
                 <button
@@ -366,7 +363,7 @@ export default function GameBoard({
               </div>
             ) : (
               <div className="rounded-lg p-3 border" style={{ backgroundColor: '#f9f7f4', borderColor: '#d4b896' }}>
-                <p className="font-semibold" style={{ color: 'var(--poker-dark-text)' }}>
+                <p className="font-semibold text-sm" style={{ color: 'var(--poker-dark-text)', lineHeight: '1.2' }}>
                   Choose the country with the most exports
                 </p>
               </div>

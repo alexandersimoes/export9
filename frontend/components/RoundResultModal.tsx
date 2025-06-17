@@ -95,7 +95,6 @@ export default function RoundResultModal({ roundResult, playerName, currentProdu
 
           {/* Cards played and export values */}
           <div className="space-y-4 mb-6">
-            <h3 className="text-lg font-semibold" style={{ color: 'var(--poker-dark-text)' }}>Cards Played:</h3>
             {roundResult.players.map((player) => (
               <div 
                 key={player.id}
@@ -137,12 +136,12 @@ export default function RoundResultModal({ roundResult, playerName, currentProdu
           {/* Current scores */}
           <div className="rounded-lg p-4 mb-6" style={{ backgroundColor: '#f9f7f4', border: '1px solid #d4b896' }}>
             <h3 className="font-semibold mb-2" style={{ color: 'var(--poker-dark-text)' }}>
-              Current Scores {isTie && '(Both players earned a point!)'}:
+              Current Scores{isTie && ' (Both players earned a point!)'}:
             </h3>
             <div className="grid grid-cols-2 gap-4">
               {roundResult.players.map((player) => (
                 <div key={player.id} className="text-center">
-                  <div className="font-semibold" style={{ color: 'var(--poker-dark-text)' }}>
+                  <div className="font-semibold" style={{ color: 'var(--poker-dark-text)', lineHeight: '1.2' }}>
                     {player.name}
                     {player.is_round_winner && (
                       <span className="text-sm ml-1" style={{ color: 'var(--poker-accent)' }}>+1</span>

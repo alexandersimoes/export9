@@ -7,6 +7,7 @@ import { Suspense } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import UserOnboarding from '@/components/UserOnboarding'
 import UserProfile from '@/components/UserProfile'
+import { initFrameAndPoll } from "@newswire/frames";
 
 function HomeContent() {
   const searchParams = useSearchParams()
@@ -16,6 +17,9 @@ function HomeContent() {
 
   // Show onboarding if no user
   useEffect(() => {
+    if (typeof document !== "undefined") {
+      initFrameAndPoll(); // Iframe poll height
+    }
     if (!isLoading && !user) {
       setShowOnboarding(true)
     }

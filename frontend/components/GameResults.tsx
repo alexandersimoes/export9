@@ -121,10 +121,10 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
 
   return (
     <div className="poker-table flex items-center justify-center p-4">
-      <div className="card w-full max-w-[800px] mx-4">
+      <div className="card w-full max-w-[800px] mx-2">
         <div className="text-center">
           {/* Game Result Header */}
-          <div className="mb-8">
+          <div className="mb-2">
             {isWinner && (
               <div className="mb-4">
                 <div className="text-4xl mb-2">🏆</div>
@@ -175,7 +175,7 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
                           {isTie ? '🥇' : (index === 0 ? '🥇' : '🥈')}
                         </div>
                         <div className="text-left">
-                          <div className="font-bold text-lg" style={{ color: 'var(--poker-dark-text)' }}>
+                          <div className="font-bold text-lg" style={{ color: 'var(--poker-dark-text)', lineHeight: '1.2' }}>
                             {player.name}
                             {player.name === playerName && <span className="ml-2" style={{ color: 'var(--poker-accent)' }}>(You)</span>}
                           </div>
@@ -186,7 +186,6 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
                       </div>
                       <div className="text-right">
                         <div className="poker-chip text-xl">{player.score}</div>
-                        <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>rounds won</div>
                       </div>
                     </div>
                   )
@@ -234,23 +233,6 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
               </p>
             </div>
           )}
-
-          {/* Game Stats */}
-          <div className="mb-8 rounded-lg p-6" style={{ backgroundColor: '#f9f7f4', border: '1px solid #d4b896' }}>
-            <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--poker-dark-text)' }}>Game Statistics</h3>
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold" style={{ color: 'var(--poker-accent)' }}>{gameState.total_rounds}</div>
-                <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>Total Rounds</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold" style={{ color: 'var(--poker-accent)' }}>
-                  {Math.max(...gameState.players.map(p => p.score))}
-                </div>
-                <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>Highest Score</div>
-              </div>
-            </div>
-          </div>
 
           {/* Action Buttons */}
           <div className="space-y-3">
