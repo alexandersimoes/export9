@@ -38,7 +38,7 @@ export default function WaitingRoom({ playerName, status, onPlayCPU }: WaitingRo
     <div className="poker-table flex items-center justify-center p-4">
       <div className="card w-full max-w-[800px] mx-4">
         <div className="text-center">
-          <div className="mb-6">
+          <div className="mb-2 md:mb-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--poker-strong-bg)' }}></div>
             <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--poker-dark-text)' }}>
               Welcome, {playerName}!
