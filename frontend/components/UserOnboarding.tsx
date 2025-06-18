@@ -13,7 +13,6 @@ interface UserOnboardingProps {
 export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
   const { loginAsGuest, login, isLoading } = useUser()
   const session: OECSession = useOECSession()
-  console.log('!!!OECSession!!!', session)
   const [showNameInput, setShowNameInput] = useState(false)
   const [guestName, setGuestName] = useState('')
   const [oecToken, setOecToken] = useState('')
@@ -71,7 +70,7 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
   const handleOecLogin = async () => {
     setError('')
     
-    const success = await login('')
+    const success = await login()
     if (success) {
       onComplete()
     } else {

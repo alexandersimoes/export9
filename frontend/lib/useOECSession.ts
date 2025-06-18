@@ -37,16 +37,12 @@ export function useOECSession() {
 
     // Step 2: Handle response
     const handleMessage = (event: MessageEvent) => {
-      console.log('!!!handleMessage event!!!', event)
       // Allow localhost, oec.world subdomain or the root domain
       const url = new URL(event.origin);
       const { hostname } = url;
       const isLocalhost = hostname === "localhost";
       const isOecWorld =
         hostname.endsWith(".oec.world") || hostname === "oec.world";
-      
-      console.log('!!!isLocalhost!!!', isLocalhost)
-      console.log('!!!isOecWorld!!!', isOecWorld)
 
       if (!isLocalhost && !isOecWorld) return;
 
@@ -56,7 +52,6 @@ export function useOECSession() {
     };
 
     window.addEventListener("message", handleMessage);
-    console.log('!!!window.addEventListener!!!')
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 

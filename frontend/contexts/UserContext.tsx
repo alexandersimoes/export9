@@ -24,7 +24,7 @@ interface UserContextType {
   guestData: GuestEloData | null
   isAuthenticated: boolean
   isGuest: boolean
-  login: (oecToken: string) => Promise<boolean>
+  login: () => Promise<boolean>
   loginAsGuest: (name?: string) => Promise<boolean>
   logout: () => void
   refreshUser: () => Promise<void>
@@ -115,11 +115,13 @@ export function UserProvider({ children }: UserProviderProps) {
     }
   }
 
-  const login = async (oecToken: string): Promise<boolean> => {
+  const login = async (): Promise<boolean> => {
     setIsLoading(true)
     
     try {
       const session: OECSession = useOECSession();
+
+      console.log('!!!LOGIN session!!!', session)
       
       if (session) {
         // Create/get OEC user from backend
