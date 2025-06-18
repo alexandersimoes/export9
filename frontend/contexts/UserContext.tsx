@@ -7,7 +7,7 @@ import useConsentFromSearchParams from "@/lib/useConsentSearchParam";
 import { useOECSession, type OECSession } from "@/lib/useOECSession";
 
 interface User {
-  id: number
+  id: string
   username: string
   display_name: string
   is_guest: boolean
@@ -126,7 +126,7 @@ export function UserProvider({ children }: UserProviderProps) {
       if (session) {
         // const userData = await response.json()
         setUser({
-          id: session.id,
+          id: session.id.toString(),
           username: session.name,
           display_name: session.name,
           is_guest: false,

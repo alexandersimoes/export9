@@ -9,7 +9,7 @@ interface UseSocketReturn {
   gameState: GameState | null
   gameStatus: GameStatus
   error: string | null
-  joinGame: (playerName: string, userId?: number) => void
+  joinGame: (playerName: string, userId?: string) => void
   playCard: (countryCode: string) => void
   playCPU: () => void
   quitGame: () => void
@@ -151,7 +151,7 @@ export function useSocket(): UseSocketReturn {
     }
   }, [])
 
-  const joinGame = (playerName: string, userId?: number) => {
+  const joinGame = (playerName: string, userId?: string) => {
     if (socketRef.current) {
       socketRef.current.emit('join_game', { name: playerName, user_id: userId })
     }

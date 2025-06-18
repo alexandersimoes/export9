@@ -23,7 +23,7 @@ function GamePageContent() {
     }
     
     if (user && gameStatus === 'connecting') {
-      joinGame(user.display_name, user.id)
+      joinGame(user.display_name, `${user.id}`)
     }
   }, [user, isLoading, gameStatus, joinGame, router])
 
