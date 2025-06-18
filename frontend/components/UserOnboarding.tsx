@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { getEloCategory, getEloColor } from '@/lib/guestElo'
+import { useOECSession, type OECSession } from "@/lib/useOECSession"
 import HowToPlayInstructions from './HowToPlayInstructions'
 
 interface UserOnboardingProps {
@@ -11,6 +12,7 @@ interface UserOnboardingProps {
 
 export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
   const { loginAsGuest, login, isLoading } = useUser()
+  const session: OECSession = useOECSession()
   const [showNameInput, setShowNameInput] = useState(false)
   const [guestName, setGuestName] = useState('')
   const [oecToken, setOecToken] = useState('')
@@ -67,6 +69,19 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
 
   const handleOecLogin = async () => {
     setError('')
+    
+    // If user has OEC session, use that
+    if (session) {
+      const success = await login('')
+      if (success) {
+        onComplete()
+      } else {
+        setError('Failed to authenticate with OEC account')
+      }
+      return
+    }
+    
+    // Otherwise use token login
     if (!oecToken.trim()) {
       setError('Please enter your OEC token')
       return
@@ -117,12 +132,21 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
 
         {!showNameInput && !showOecLogin && (
           <div className="space-y-4">
-            <a
-              href={`https://oec.world/en/login?redirect=${window.location.origin}`}
-              className="w-full poker-chip text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
-            >
-              Sign in with OEC Account
-            </a>
+            {session ? (
+              <button
+                onClick={handleOecLogin}
+                className="w-full poker-chip text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
+              >
+                Use {session.name}
+              </button>
+            ) : (
+              <a
+                href={`https://oec.world/en/login?redirect=${window.location.origin}`}
+                className="w-full poker-chip text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
+              >
+                Sign in with OEC Account
+              </a>
+            )}
             
             <div className="text-center">
               <span className="text-poker-dark-text opacity-60">or</span>
