@@ -68,9 +68,15 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
     }
   }
 
-  const handleOecLogin = () => {
+  const handleOecLogin = async () => {
     setError('')
-    onComplete();
+    
+    const success = await login('')
+    if (success) {
+      onComplete()
+    } else {
+      setError('Failed to authenticate with OEC account')
+    }
   }
 
   if (isLoading) {

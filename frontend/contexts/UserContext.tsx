@@ -119,39 +119,43 @@ export function UserProvider({ children }: UserProviderProps) {
     setIsLoading(true)
     
     try {
-      const consent = useConsentFromSearchParams();
-
       const session: OECSession = useOECSession();
       
       if (session) {
-        // const userData = await response.json()
-        setUser({
-          id: session.id.toString(),
-          username: session.name,
-          display_name: session.name,
-          is_guest: false,
-          elo_rating: 1200,
-          games_played: 0,
-          wins: 0,
-          losses: 0,
-          draws: 0,
-          elo_category: 'beginner'
+        // Create/get OEC user from backend
+        const response = await fetch(`${getApiUrl()}/api/users/auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            oec_user_id: session.id.toString(),
+            username: session.name || session.email || `user_${session.id}`,
+            display_name: session.name || session.email || `User ${session.id}`,
+            email: session.email
+          })
         })
-        setGuestData(null) // Clear guest data
         
-        // Initialize geolocation tracking for new authenticated users
-        initializeUserGeolocation().catch(error => 
-          console.warn('Geolocation initialization failed:', error)
-        )
-        
-        // Store user session
-        localStorage.setItem('export9_user_id', session?.id.toString())
-        localStorage.setItem('export9_is_guest', 'false')
-        localStorage.setItem('export9_oec_session', JSON.stringify(session))
-        
-        return true
+        if (response.ok) {
+          const userData = await response.json()
+          setUser(userData)
+          setGuestData(null) // Clear guest data
+          
+          // Initialize geolocation tracking for new authenticated users
+          initializeUserGeolocation().catch(error => 
+            console.warn('Geolocation initialization failed:', error)
+          )
+          
+          // Store user session
+          localStorage.setItem('export9_user_id', userData.id.toString())
+          localStorage.setItem('export9_is_guest', 'false')
+          localStorage.setItem('export9_oec_session', JSON.stringify(session))
+          
+          return true
+        } else {
+          console.error('Failed to create/get OEC user from backend')
+          return false
+        }
       } else {
-        console.error('OEC authentication failed')
+        console.error('No OEC session found')
         return false
       }
     } catch (error) {

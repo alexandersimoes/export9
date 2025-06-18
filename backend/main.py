@@ -52,7 +52,11 @@ class GuestUserRequest(BaseModel):
     name: Optional[str] = None
 
 class AuthUserRequest(BaseModel):
-    oec_token: str
+    oec_token: Optional[str] = None
+    oec_user_id: Optional[str] = None
+    username: Optional[str] = None
+    display_name: Optional[str] = None
+    email: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: int
@@ -182,23 +186,30 @@ async def create_guest_user(request: GuestUserRequest):
 
 @app.post("/api/users/auth", response_model=UserResponse)
 async def authenticate_user(request: AuthUserRequest):
-    """Authenticate user with OEC token"""
+    """Authenticate user with OEC session data or token"""
     try:
-        # Verify token with OEC
-        oec_user_data = await verify_oec_token(request.oec_token)
-        if not oec_user_data:
-            raise HTTPException(status_code=401, detail="Invalid OEC token")
+        # Check if we have direct OEC session data
+        if request.oec_user_id and request.username:
+            oec_user_id = request.oec_user_id
+            username = request.username
+            raw_display_name = request.display_name or request.username
+        elif request.oec_token:
+            # Fallback to token verification
+            oec_user_data = await verify_oec_token(request.oec_token)
+            if not oec_user_data:
+                raise HTTPException(status_code=401, detail="Invalid OEC token")
+            
+            oec_user_id = str(oec_user_data.get("id"))
+            username = oec_user_data.get("username", f"user_{oec_user_id}")
+            raw_display_name = oec_user_data.get("name", username)
+        else:
+            raise HTTPException(status_code=400, detail="Either OEC session data or token required")
         
-        # Extract user info
-        oec_user_id = str(oec_user_data.get("id"))
-        username = oec_user_data.get("username", f"user_{oec_user_id}")
-        raw_display_name = oec_user_data.get("name", username)
-        
-        # Clean and validate display name from OEC
+        # Clean and validate display name
         try:
             display_name = validate_display_name(raw_display_name)
         except HTTPException:
-            # If OEC name is invalid, fall back to username or generate clean name
+            # If name is invalid, fall back to username or generate clean name
             import re
             if re.match(r'^[a-zA-Z0-9\s]+$', username) and len(username) <= 20:
                 display_name = username

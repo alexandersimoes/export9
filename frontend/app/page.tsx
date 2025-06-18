@@ -99,6 +99,7 @@ function HomeContent() {
                 <button
                   onClick={() => setShowOnboarding(true)}
                   className="bg-white border-2 border-poker-strong-bg text-poker-dark-text font-semibold py-3 px-3 rounded-lg hover:bg-poker-light-bg transition-colors"
+                  style={{ lineHeight: '1.2' }}
                 >
                   Switch Account
                 </button>
