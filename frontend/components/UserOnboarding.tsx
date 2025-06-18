@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import { getEloCategory, getEloColor } from '@/lib/guestElo'
+import HowToPlayInstructions from './HowToPlayInstructions'
 
 interface UserOnboardingProps {
   onComplete: () => void
@@ -14,6 +15,7 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
   const [guestName, setGuestName] = useState('')
   const [oecToken, setOecToken] = useState('')
   const [showOecLogin, setShowOecLogin] = useState(false)
+  const [showHowToPlay, setShowHowToPlay] = useState(false)
   const [error, setError] = useState('')
 
   const handleGuestPlay = async () => {
@@ -95,7 +97,15 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="rounded-lg p-8 max-w-md w-full mx-4 border-2" style={{ backgroundColor: '#fbe4c7', borderColor: '#891710' }}>
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold mb-2" style={{ color: '#452610' }}>Welcome to Export Holdem!</h2>
+          {/* Logo */}
+          <div className="flex justify-center mb-3">
+            <img 
+              src="/logo.png" 
+              alt="Export Holdem" 
+              className="h-20 w-auto"
+              style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))' }}
+            />
+          </div>
           <p className="opacity-80" style={{ color: '#452610' }}>Choose how you'd like to play</p>
         </div>
 
@@ -107,12 +117,12 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
 
         {!showNameInput && !showOecLogin && (
           <div className="space-y-4">
-            <button
-              onClick={() => setShowOecLogin(true)}
+            <a
+              href={`https://oec.world/en/login?redirect=${window.location.origin}`}
               className="w-full poker-chip text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
             >
               Sign in with OEC Account
-            </button>
+            </a>
             
             <div className="text-center">
               <span className="text-poker-dark-text opacity-60">or</span>
@@ -213,7 +223,40 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
             </div>
           </div>
         )}
+        
+        {/* How to Play Button */}
+        {!showHowToPlay && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => setShowHowToPlay(true)}
+              className="text-poker-dark-text opacity-60 hover:opacity-80 text-sm underline transition-opacity"
+            >
+              How to Play
+            </button>
+          </div>
+        )}
       </div>
+      
+      {/* How to Play Popover */}
+      {showHowToPlay && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: '#d4b896' }}>
+              <h2 className="text-xl font-bold" style={{ color: '#452610' }}>How to Play Export Holdem</h2>
+              <button
+                onClick={() => setShowHowToPlay(false)}
+                className="text-2xl hover:opacity-70 transition-opacity"
+                style={{ color: '#452610' }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4">
+              <HowToPlayInstructions compact />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

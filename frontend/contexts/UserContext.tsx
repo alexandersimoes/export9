@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { getGuestEloData, initializeGuestElo, hasGuestEloData, GuestEloData } from '@/lib/guestElo'
 import { initializeUserGeolocation, GeolocationData } from '@/lib/geolocation'
+import useConsentFromSearchParams from "@/lib/useConsentSearchParam";
+import { useOECSession, type OECSession } from "@/lib/useOECSession";
 
 interface User {
   id: number
@@ -117,15 +119,24 @@ export function UserProvider({ children }: UserProviderProps) {
     setIsLoading(true)
     
     try {
-      const response = await fetch(`${getApiUrl()}/api/users/auth`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ oec_token: oecToken })
-      })
+      const consent = useConsentFromSearchParams();
+
+      const session: OECSession = useOECSession();
       
-      if (response.ok) {
-        const userData = await response.json()
-        setUser(userData)
+      if (session) {
+        // const userData = await response.json()
+        setUser({
+          id: session.id,
+          username: session.name,
+          display_name: session.name,
+          is_guest: false,
+          elo_rating: 1200,
+          games_played: 0,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          elo_category: 'beginner'
+        })
         setGuestData(null) // Clear guest data
         
         // Initialize geolocation tracking for new authenticated users
@@ -134,9 +145,9 @@ export function UserProvider({ children }: UserProviderProps) {
         )
         
         // Store user session
-        localStorage.setItem('export9_user_id', userData.id.toString())
+        localStorage.setItem('export9_user_id', session?.id.toString())
         localStorage.setItem('export9_is_guest', 'false')
-        localStorage.setItem('export9_oec_token', oecToken)
+        localStorage.setItem('export9_oec_session', JSON.stringify(session))
         
         return true
       } else {
