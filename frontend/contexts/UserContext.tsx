@@ -69,6 +69,7 @@ export function UserProvider({ children }: UserProviderProps) {
         const response = await fetch(`${getApiUrl()}/api/users/${storedUserId}`)
         if (response.ok) {
           const userData = await response.json()
+          console.log('!!!initializeUserState userData!!!', userData)
           setUser(userData)
           
           if (userData.is_guest) {
