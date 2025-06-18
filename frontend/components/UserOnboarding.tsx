@@ -68,34 +68,6 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
     }
   }
 
-  const handleOecLogin = async () => {
-    setError('')
-    
-    // If user has OEC session, use that
-    if (session) {
-      const success = await login('')
-      if (success) {
-        onComplete()
-      } else {
-        setError('Failed to authenticate with OEC account')
-      }
-      return
-    }
-    
-    // Otherwise use token login
-    if (!oecToken.trim()) {
-      setError('Please enter your OEC token')
-      return
-    }
-    
-    const success = await login(oecToken.trim())
-    if (success) {
-      onComplete()
-    } else {
-      setError('Invalid OEC token or authentication failed')
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -138,7 +110,7 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
                 onClick={handleOecLogin}
                 className="w-full poker-chip text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
               >
-                Use {session.name}
+                Use {session.name || session.email}
               </button>
             ) : (
               <a
@@ -209,41 +181,6 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
                 className="flex-1 poker-chip text-white font-semibold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity"
               >
                 Start Playing
-              </button>
-            </div>
-          </div>
-        )}
-
-        {showOecLogin && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-poker-dark-text font-medium mb-2">
-                OEC API Token:
-              </label>
-              <input
-                type="password"
-                value={oecToken}
-                onChange={(e) => setOecToken(e.target.value)}
-                placeholder="Enter your OEC token"
-                className="w-full px-4 py-2 border-2 border-poker-strong-bg rounded-lg focus:outline-none focus:border-poker-accent bg-white text-poker-dark-text"
-              />
-              <p className="text-xs text-poker-dark-text opacity-60 mt-1">
-                Get your token from <a href="https://oec.world/api" target="_blank" rel="noopener noreferrer" className="text-poker-accent hover:underline">oec.world/api</a>
-              </p>
-            </div>
-            
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowOecLogin(false)}
-                className="flex-1 bg-gray-200 text-poker-dark-text font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleOecLogin}
-                className="flex-1 bg-poker-accent text-poker-dark-text font-semibold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity"
-              >
-                Sign In
               </button>
             </div>
           </div>
