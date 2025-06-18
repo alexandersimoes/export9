@@ -67,10 +67,10 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
     }
   }
 
-  const handleOecLogin = async () => {
+  const handleOecLogin = async (session: OECSession) => {
     setError('')
     
-    const success = await login()
+    const success = await login(session)
     if (success) {
       onComplete()
     } else {
@@ -117,7 +117,7 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
           <div className="space-y-4">
             {session ? (
               <button
-                onClick={handleOecLogin}
+                onClick={() => handleOecLogin(session)}
                 className="w-full poker-chip text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
               >
                 Use {session.name || session.email}
