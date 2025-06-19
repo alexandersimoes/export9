@@ -74,9 +74,18 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
         return
       }
       
+      // Debug logging
+      console.log('GameResults Debug:', {
+        isGuest,
+        userId,
+        userIsGuest: user?.is_guest,
+        user: user
+      })
+      
       // Check if we've already processed this game result
       const processedGames = JSON.parse(localStorage.getItem('export9_processed_games') || '[]')
       if (processedGames.includes(gameResultId)) {
+        console.log('Game already processed:', gameResultId)
         setProcessingElo(false)
         return
       }
