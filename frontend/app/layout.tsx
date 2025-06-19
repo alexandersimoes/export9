@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="poker-table min-h-screen">
+      <body className="poker-table">
         <UserProvider>
           <main>{children}</main>
         </UserProvider>
