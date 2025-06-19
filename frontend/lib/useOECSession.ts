@@ -32,7 +32,8 @@ export function useOECSession() {
     ];
 
     targetOrigins.forEach((origin) => {
-      window.parent.postMessage({ type: 'requestSession', game: 'export-holdem' }, origin);
+      // window.parent.postMessage({ type: 'requestSession', game: 'export-holdem' }, origin);
+      window.parent.postMessage('requestSession', origin);
     });
 
     // Step 2: Handle response

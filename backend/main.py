@@ -257,61 +257,116 @@ async def get_leaderboard(limit: int = 50):
 async def record_game_result(request: GameResultRequest):
   """Record game result and update ELO ratings"""
   try:
-    # Get players
+    # Get player1 (human player)
     player1 = db.get_user_by_id(request.player1_id)
-    player2 = db.get_user_by_id(request.player2_id)
-
-    if not player1 or not player2:
+    if not player1:
       raise HTTPException(status_code=404, detail="Player not found")
 
-    # Calculate new ELO ratings
-    elo_result = EloCalculator.calculate_new_elos(
-        player1.elo_rating, player1.games_played,
-        player2.elo_rating, player2.games_played,
-        request.player1_score, request.player2_score
-    )
+    # Check if this is a CPU game
+    is_cpu_game = request.player2_id == 'cpu'
 
-    # Determine winner and game results
-    if request.player1_score > request.player2_score:
-      winner_id = player1.id
-      player1_result = "win"
-      player2_result = "loss"
-    elif request.player2_score > request.player1_score:
-      winner_id = player2.id
-      player1_result = "loss"
-      player2_result = "win"
+    if is_cpu_game:
+      # CPU opponent with fixed rating
+      cpu_elo = 1200
+      cpu_games_played = 1000  # Treat CPU as experienced player for K-factor
+
+      # Calculate new ELO for player1 vs CPU
+      elo_result = EloCalculator.calculate_new_elos(
+          player1.elo_rating, player1.games_played,
+          cpu_elo, cpu_games_played,
+          request.player1_score, request.player2_score
+      )
+
+      # Determine winner and game result for player1
+      if request.player1_score > request.player2_score:
+        winner_id = player1.id
+        player1_result = "win"
+      elif request.player2_score > request.player1_score:
+        winner_id = 'cpu'
+        player1_result = "loss"
+      else:
+        winner_id = None
+        player1_result = "draw"
+
+      # Update only player1's ELO (CPU doesn't get updated)
+      db.update_user_elo(player1.id, elo_result.player1_new_elo, player1_result)
+
+      # Save game record for CPU game
+      game_record = GameRecord(
+          player1_id=player1.id,
+          player2_id='cpu',
+          winner_id=winner_id,
+          player1_score=request.player1_score,
+          player2_score=request.player2_score,
+          player1_elo_before=player1.elo_rating,
+          player2_elo_before=cpu_elo,
+          player1_elo_after=elo_result.player1_new_elo,
+          player2_elo_after=cpu_elo,  # CPU ELO doesn't change
+          elo_change=elo_result.elo_change,
+          game_duration=request.game_duration
+      )
+      db.save_game_record(game_record)
+
+      return {
+          "success": True,
+          "player1_elo_change": elo_result.player1_new_elo - player1.elo_rating,
+          "player2_elo_change": 0,  # CPU doesn't change
+          "elo_points_exchanged": elo_result.elo_change
+      }
+
     else:
-      winner_id = None
-      player1_result = "draw"
-      player2_result = "draw"
+      # Human vs Human game
+      player2 = db.get_user_by_id(request.player2_id)
+      if not player2:
+        raise HTTPException(status_code=404, detail="Player 2 not found")
 
-    # Update player ELOs
-    db.update_user_elo(player1.id, elo_result.player1_new_elo, player1_result)
-    db.update_user_elo(player2.id, elo_result.player2_new_elo, player2_result)
+      # Calculate new ELO ratings
+      elo_result = EloCalculator.calculate_new_elos(
+          player1.elo_rating, player1.games_played,
+          player2.elo_rating, player2.games_played,
+          request.player1_score, request.player2_score
+      )
 
-    # Save game record
-    game_record = GameRecord(
-        player1_id=player1.id,
-        player2_id=player2.id,
-        winner_id=winner_id,
-        player1_score=request.player1_score,
-        player2_score=request.player2_score,
-        player1_elo_before=player1.elo_rating,
-        player2_elo_before=player2.elo_rating,
-        player1_elo_after=elo_result.player1_new_elo,
-        player2_elo_after=elo_result.player2_new_elo,
-        elo_change=elo_result.elo_change,
-        game_duration=request.game_duration
-    )
+      # Determine winner and game results
+      if request.player1_score > request.player2_score:
+        winner_id = player1.id
+        player1_result = "win"
+        player2_result = "loss"
+      elif request.player2_score > request.player1_score:
+        winner_id = player2.id
+        player1_result = "loss"
+        player2_result = "win"
+      else:
+        winner_id = None
+        player1_result = "draw"
+        player2_result = "draw"
 
-    db.save_game_record(game_record)
+      # Update both players' ELOs
+      db.update_user_elo(player1.id, elo_result.player1_new_elo, player1_result)
+      db.update_user_elo(player2.id, elo_result.player2_new_elo, player2_result)
 
-    return {
-        "success": True,
-        "player1_elo_change": elo_result.player1_new_elo - player1.elo_rating,
-        "player2_elo_change": elo_result.player2_new_elo - player2.elo_rating,
-        "elo_points_exchanged": elo_result.elo_change
-    }
+      # Save game record for human vs human game
+      game_record = GameRecord(
+          player1_id=player1.id,
+          player2_id=player2.id,
+          winner_id=winner_id,
+          player1_score=request.player1_score,
+          player2_score=request.player2_score,
+          player1_elo_before=player1.elo_rating,
+          player2_elo_before=player2.elo_rating,
+          player1_elo_after=elo_result.player1_new_elo,
+          player2_elo_after=elo_result.player2_new_elo,
+          elo_change=elo_result.elo_change,
+          game_duration=request.game_duration
+      )
+      db.save_game_record(game_record)
+
+      return {
+          "success": True,
+          "player1_elo_change": elo_result.player1_new_elo - player1.elo_rating,
+          "player2_elo_change": elo_result.player2_new_elo - player2.elo_rating,
+          "elo_points_exchanged": elo_result.elo_change
+      }
 
   except HTTPException:
     raise
