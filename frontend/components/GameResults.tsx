@@ -120,36 +120,38 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
         } else {
           // Handle authenticated user ELO update via API
           const opponentUser = gameState.players.find(p => p.name !== playerName)
-          if (opponentUser && 'user_id' in opponentUser) {
-            const apiUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://export9.oec.world'
-            const response = await fetch(`${apiUrl}/api/games/result`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                player1_id: user.id,
-                player2_id: (opponentUser as any).user_id,
-                player1_score: currentPlayer.score,
-                player2_score: opponent.score
-              })
+
+          const gameResults = {
+            player1_id: user.id,
+            player2_id: (opponentUser as any).user_id || 'cpu',
+            player1_score: currentPlayer.score,
+            player2_score: opponent.score
+          }
+          
+          const apiUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://export9.oec.world'
+          const response = await fetch(`${apiUrl}/api/games/result`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(gameResults)
+          })
+          
+          if (response.ok) {
+            const result = await response.json()
+            setEloChange({
+              change: result.player1_elo_change,
+              newElo: user.elo_rating + result.player1_elo_change
             })
             
-            if (response.ok) {
-              const result = await response.json()
-              setEloChange({
-                change: result.player1_elo_change,
-                newElo: user.elo_rating + result.player1_elo_change
-              })
-              
-              // Save score to OEC API if user has OEC session
-              if (userId && userId !== '') {
-                await saveScoreToOEC(isWinner || false)
-              }
-              
-              // Refresh user data
-              await refreshUser()
+            // Save score to OEC API if user has OEC session
+            if (userId && userId !== '') {
+              await saveScoreToOEC(isWinner || false)
             }
+            
+            // Refresh user data
+            await refreshUser()
           }
         }
+        
         // Mark this game as processed to prevent duplicate updates
         const processedGames = JSON.parse(localStorage.getItem('export9_processed_games') || '[]')
         processedGames.push(gameResultId)
