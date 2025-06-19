@@ -80,8 +80,8 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="rounded-lg p-8 max-w-sm w-full mx-4 border-2" style={{ backgroundColor: '#fbe4c7', borderColor: '#891710' }}>
+      <div className="inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="rounded-lg p-8 max-w-sm w-full mx-2 md:mx-4 border-2" style={{ backgroundColor: '#fbe4c7', borderColor: '#891710' }}>
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto mb-4" style={{ borderColor: '#891710' }}></div>
             <p style={{ color: '#452610' }}>Setting up your account...</p>
@@ -92,8 +92,8 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="rounded-lg p-8 max-w-md w-full mx-4 border-2" style={{ backgroundColor: '#fbe4c7', borderColor: '#891710' }}>
+    <div className="inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="rounded-lg p-8 max-w-md w-full mx-2 md:mx-4 border-2" style={{ backgroundColor: '#fbe4c7', borderColor: '#891710' }}>
         <div className="text-center mb-6">
           {/* Logo */}
           <div className="flex justify-center mb-3">
@@ -211,8 +211,8 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
       
       {/* How to Play Popover */}
       {showHowToPlay && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full mx-2 md:mx-4 max-h-[80vh] overflow-y-auto">
             <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: '#d4b896' }}>
               <h2 className="text-xl font-bold" style={{ color: '#452610' }}>How to Play Export Holdem</h2>
               <button

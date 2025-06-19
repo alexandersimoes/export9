@@ -52,8 +52,8 @@ export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-poker-light-bg rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto border-2 border-poker-strong-bg">
+    <div className="inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-poker-light-bg rounded-lg p-6 max-w-2xl w-full mx-2 md:mx-4 max-h-[90vh] overflow-y-auto border-2 border-poker-strong-bg">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-poker-dark-text">ELO Leaderboard</h2>
           <button
