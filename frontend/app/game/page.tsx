@@ -54,6 +54,7 @@ function GamePageContent() {
       <GameResults 
         gameState={gameState}
         playerName={user?.display_name || ''}
+        userId={user?.id || ''}
       />
     )
   }

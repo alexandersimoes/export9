@@ -11,6 +11,7 @@ import { getStoredGeolocationData } from '@/lib/geolocation'
 interface GameResultsProps {
   gameState: GameState
   playerName: string
+  userId: string
 }
 
 interface EloChange {
@@ -18,7 +19,7 @@ interface EloChange {
   newElo: number
 }
 
-export default function GameResults({ gameState, playerName }: GameResultsProps) {
+export default function GameResults({ gameState, playerName, userId }: GameResultsProps) {
   const router = useRouter()
   const { user, isGuest, refreshUser, refreshGuestData } = useUser()
   const session: OECSession = useOECSession()
@@ -36,9 +37,9 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
 
   // Save score to OEC API for authenticated users
   const saveScoreToOEC = async (won: boolean) => {
+    console.log('!!!session!!!', session)
     if (!session) return
 
-    console.log('!!!session!!!', session)
     
     try {
       const geoData = getStoredGeolocationData()
@@ -48,7 +49,7 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
         game: 'export-holdem',
         meta: {
           user: geoData,
-          userId: session.id,
+          userId: userId,
         },
         answer: null,
         submission: null,
@@ -140,7 +141,7 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
               })
               
               // Save score to OEC API if user has OEC session
-              if (session) {
+              if (userId && userId !== '') {
                 await saveScoreToOEC(isWinner || false)
               }
               
