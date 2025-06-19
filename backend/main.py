@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 # Create Socket.IO server
 sio = socketio.AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://export9.oec.world"],
+    cors_allowed_origins=["http://localhost:3000", "http://127.0.0.1:3000",
+                          "https://export9.oec.world", "https://dev.oec.world", "https://oec.world"],
     logger=True,
     engineio_logger=True,
     ping_timeout=60,
@@ -40,7 +41,7 @@ app = FastAPI(title="Export Game API", version="1.0.0")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://export9.oec.world"],
+    allow_origins=["http://localhost:3000", "https://export9.oec.world", "https://dev.oec.world", "https://oec.world"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

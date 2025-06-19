@@ -37,9 +37,23 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
   // Save score to OEC API for authenticated users
   const saveScoreToOEC = async (won: boolean) => {
     if (!session) return
+
+    console.log('!!!session!!!', session)
     
     try {
       const geoData = getStoredGeolocationData()
+      console.log('!!!geoData!!!', geoData)
+
+      console.log({
+        game: 'export-holdem',
+        meta: {
+          user: geoData,
+          userId: session.id,
+        },
+        answer: null,
+        submission: null,
+        won: won,
+      })
       
       await fetch('https://oec.world/api/games/score', {
         headers: {

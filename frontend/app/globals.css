@@ -54,7 +54,7 @@
   }
   
   .poker-table {
-    background: linear-gradient(135deg, var(--poker-strong-bg) 0%, #6b1409 100%);
+    background: var(--poker-strong-bg);
     /* @apply min-h-screen; */
   }
   
@@ -163,4 +163,8 @@
     background: linear-gradient(90deg, var(--poker-accent) 0%, #e6a82e 100%);
     box-shadow: 0 1px 3px rgba(248, 185, 53, 0.5);
   }
+}
+
+.bg-black {
+  background: transparent !important;
 }
