@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import { GameState } from '@/types/game'
 import { useUser } from '@/contexts/UserContext'
 import { updateGuestElo, getGuestEloData } from '@/lib/guestElo'
+import { useOECSession, type OECSession } from "@/lib/useOECSession"
+import { getStoredGeolocationData } from '@/lib/geolocation'
 
 interface GameResultsProps {
   gameState: GameState
@@ -19,6 +21,7 @@ interface EloChange {
 export default function GameResults({ gameState, playerName }: GameResultsProps) {
   const router = useRouter()
   const { user, isGuest, refreshUser, refreshGuestData } = useUser()
+  const session: OECSession = useOECSession()
   const [eloChange, setEloChange] = useState<EloChange | null>(null)
   const [processingElo, setProcessingElo] = useState(true)
   
@@ -30,6 +33,35 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
   
   const isWinner = currentPlayer && opponent && currentPlayer.score > opponent.score
   const isDraw = currentPlayer && opponent && currentPlayer.score === opponent.score
+
+  // Save score to OEC API for authenticated users
+  const saveScoreToOEC = async (won: boolean) => {
+    if (!session) return
+    
+    try {
+      const geoData = getStoredGeolocationData()
+      
+      await fetch('https://oec.world/api/games/score', {
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          game: 'export-holdem',
+          meta: {
+            user: geoData,
+            userId: session.id,
+          },
+          answer: null,
+          submission: null,
+          won: won,
+        }),
+      })
+    } catch (error) {
+      console.error('Error saving score to OEC:', error)
+    }
+  }
 
   // Process ELO changes
   useEffect(() => {
@@ -92,6 +124,11 @@ export default function GameResults({ gameState, playerName }: GameResultsProps)
                 change: result.player1_elo_change,
                 newElo: user.elo_rating + result.player1_elo_change
               })
+              
+              // Save score to OEC API if user has OEC session
+              if (session) {
+                await saveScoreToOEC(isWinner || false)
+              }
               
               // Refresh user data
               await refreshUser()
