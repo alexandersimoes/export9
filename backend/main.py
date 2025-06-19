@@ -15,7 +15,7 @@ from datetime import datetime
 from models import GameManager
 from socket_handlers import register_socket_handlers
 from data_manager import export_data_manager, update_scheduler
-from database import db, User, GameRecord
+from database import db, User, GameRecord, coerce_user_id
 from elo_system import EloCalculator
 from guest_names import generate_guest_username, generate_guest_display_name
 
@@ -64,7 +64,7 @@ class AuthUserRequest(BaseModel):
 
 
 class UserResponse(BaseModel):
-  id: int
+  id: str
   username: str
   display_name: str
   is_guest: bool
@@ -87,8 +87,8 @@ class LeaderboardEntry(BaseModel):
 
 
 class GameResultRequest(BaseModel):
-  player1_id: int
-  player2_id: int
+  player1_id: str
+  player2_id: str
   player1_score: int
   player2_score: int
   game_duration: Optional[int] = None
@@ -141,7 +141,7 @@ async def verify_oec_token(token: str) -> Optional[dict]:
 def user_to_response(user: User) -> UserResponse:
   """Convert User to UserResponse"""
   return UserResponse(
-      id=user.id,
+      id=coerce_user_id(user.id),
       username=user.username,
       display_name=user.display_name,
       is_guest=user.is_guest,
@@ -233,7 +233,7 @@ async def authenticate_user(request: AuthUserRequest):
 
 
 @app.get("/api/users/{user_id}", response_model=UserResponse)
-async def get_user(user_id: int):
+async def get_user(user_id: str):
   """Get user by ID"""
   user = db.get_user_by_id(user_id)
   if not user:
@@ -321,7 +321,7 @@ async def record_game_result(request: GameResultRequest):
 
 
 @app.get("/api/matchmaking/{user_id}")
-async def find_opponent(user_id: int):
+async def find_opponent(user_id: str):
   """Find opponent with similar ELO rating"""
   try:
     user = db.get_user_by_id(user_id)
