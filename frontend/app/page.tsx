@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getFlagEmoji } from '@/lib/utils'
 import { Suspense } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import UserOnboarding from '@/components/UserOnboarding'
@@ -38,7 +37,7 @@ function HomeContent() {
   if (isLoading) {
     return (
       <div className="poker-table flex items-center justify-center p-2">
-        <div className="card w-full max-w-[800px] mx-4">
+        <div className="card w-full max-w-[800px] mx-2 md:mx-4">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-poker-strong-bg mx-auto mb-4"></div>
             <p className="text-poker-dark-text">Loading...</p>
@@ -56,7 +55,7 @@ function HomeContent() {
       
       {!showOnboarding && (
         <div className="poker-table flex items-center justify-center p-2">
-        <div className="card w-full max-w-[800px] mx-4">
+        <div className="card w-full max-w-[800px] mx-2 md:mx-4">
           <div className="text-center mb-8">
             {/* Logo */}
             <div className="flex justify-center mb-3">
@@ -125,7 +124,7 @@ export default function Home() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-purple-900">
-        <div className="card max-w-md w-full mx-4">
+        <div className="card max-w-md w-full mx-2 md:mx-4">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-game-primary mx-auto mb-4"></div>
             <p className="text-gray-600">Loading...</p>

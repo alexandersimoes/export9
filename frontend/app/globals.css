@@ -54,7 +54,7 @@
   
   .poker-table {
     background: linear-gradient(135deg, var(--poker-strong-bg) 0%, #6b1409 100%);
-    @apply min-h-screen;
+    /* @apply min-h-screen; */
   }
   
   .playing-card {

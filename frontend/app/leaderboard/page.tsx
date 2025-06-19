@@ -45,7 +45,7 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="poker-table flex items-center justify-center p-4 min-h-screen">
+    <div className="poker-table flex items-center justify-center p-4">
       <div className="card w-full max-w-4xl mx-4">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
           <div className="text-center sm:text-left">
