@@ -43,18 +43,6 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
     
     try {
       const geoData = getStoredGeolocationData()
-      console.log('!!!geoData!!!', geoData)
-
-      console.log({
-        game: 'export-holdem',
-        meta: {
-          user: geoData,
-          userId: userId,
-        },
-        answer: null,
-        submission: null,
-        won: won,
-      })
       
       await fetch('https://oec.world/api/games/score', {
         headers: {
@@ -68,8 +56,8 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
             user: geoData,
             userId: session.id,
           },
-          answer: null,
-          submission: null,
+          answer: {},
+          submission: {},
           won: won,
         }),
       })
