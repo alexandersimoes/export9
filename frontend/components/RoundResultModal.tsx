@@ -59,7 +59,7 @@ export default function RoundResultModal({ roundResult, playerName, currentProdu
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 h-screen">
       <div className="card max-w-lg w-full mx-2 md:mx-4">
         <div className="text-center">
           {/* Winner announcement */}

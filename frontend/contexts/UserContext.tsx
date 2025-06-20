@@ -123,12 +123,7 @@ export function UserProvider({ children }: UserProviderProps) {
       
       if (session) {
 
-      console.log('!!!LOGIN session!!!', { 
-        oec_user_id: session.id.toString(),
-        username: session.name || session.email || `user_${session.id}`,
-        display_name: session.name || session.email || `User ${session.id}`,
-        email: session.email
-      })
+        console.log('!!!LOGIN FULL SESSION!!!', session)
         // Create/get OEC user from backend
         const response = await fetch(`${getApiUrl()}/api/users/auth`, {
           method: 'POST',
