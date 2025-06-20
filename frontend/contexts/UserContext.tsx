@@ -223,16 +223,29 @@ export function UserProvider({ children }: UserProviderProps) {
     if (!user) return
     
     try {
-      if (user.is_guest) {
-        // For guest users, just refresh from localStorage
-        const localGuestData = getGuestEloData()
-        setGuestData(localGuestData)
-      } else {
-        // For authenticated users, fetch from backend
-        const response = await fetch(`${getApiUrl()}/api/users/${user.id}`)
-        if (response.ok) {
-          const userData = await response.json()
-          setUser(userData)
+      // Both guest and authenticated users are now stored in the backend database
+      // so we fetch fresh data from the API for both
+      const response = await fetch(`${getApiUrl()}/api/users/${user.id}`)
+      if (response.ok) {
+        const userData = await response.json()
+        setUser(userData)
+        
+        // For guest users, also update localStorage for backward compatibility
+        if (userData.is_guest) {
+          const guestData: GuestEloData = {
+            elo_rating: userData.elo_rating,
+            games_played: userData.games_played,
+            wins: userData.wins,
+            losses: userData.losses,
+            draws: userData.draws,
+            username: userData.username,
+            display_name: userData.display_name,
+            created_at: userData.created_at || new Date().toISOString(),
+            last_played: userData.last_played || new Date().toISOString()
+          }
+          setGuestData(guestData)
+          // Update localStorage to keep it in sync
+          localStorage.setItem('export9_guest_elo', JSON.stringify(guestData))
         }
       }
     } catch (error) {

@@ -26,8 +26,8 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
   const [eloChange, setEloChange] = useState<EloChange | null>(null)
   const [processingElo, setProcessingElo] = useState(true)
   
-  // Use game ID + player scores as unique identifier to prevent duplicate processing
-  const gameResultId = `${gameState.game_id}-${gameState.players.map(p => p.score).join('-')}`
+  // Use game ID + user ID + player scores as unique identifier to prevent duplicate processing
+  const gameResultId = `${gameState.game_id}-${userId}-${gameState.players.map(p => p.score).join('-')}`
   
   const currentPlayer = gameState.players.find(p => p.name === playerName)
   const opponent = gameState.players.find(p => p.name !== playerName)
@@ -74,79 +74,46 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
         return
       }
       
-      // Debug logging
-      console.log('GameResults Debug:', {
-        isGuest,
-        userId,
-        userIsGuest: user?.is_guest,
-        user: user
-      })
-      
       // Check if we've already processed this game result
       const processedGames = JSON.parse(localStorage.getItem('export9_processed_games') || '[]')
       if (processedGames.includes(gameResultId)) {
-        console.log('Game already processed:', gameResultId)
         setProcessingElo(false)
         return
       }
 
       try {
-        if (isGuest) {
-          // Handle guest ELO update locally
-          const currentGuestData = getGuestEloData()
-          if (currentGuestData) {
-            const previousElo = currentGuestData.elo_rating
-            
-            const updatedGuestData = updateGuestElo(
-              opponent.name,
-              1200, // Default opponent ELO for now
-              currentPlayer.score,
-              opponent.score
-            )
-            
-            if (updatedGuestData) {
-              setEloChange({
-                change: updatedGuestData.elo_rating - previousElo,
-                newElo: updatedGuestData.elo_rating
-              })
-              
-              // Refresh guest data in context to update UI
-              refreshGuestData()
-            }
-          }
-        } else {
-          // Handle authenticated user ELO update via API
-          const opponentUser = gameState.players.find(p => p.name !== playerName)
+        // All users (guests and authenticated) now use the backend API system
+        // since guest users are created in the database
+        const opponentUser = gameState.players.find(p => p.name !== playerName)
 
-          const gameResults = {
-            player1_id: user.id,
-            player2_id: (opponentUser as any).user_id || 'cpu',
-            player1_score: currentPlayer.score,
-            player2_score: opponent.score
-          }
-          
-          const apiUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://export9.oec.world'
-          const response = await fetch(`${apiUrl}/api/games/result`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(gameResults)
+        const gameResults = {
+          player1_id: user.id,
+          player2_id: (opponentUser as any).user_id || 'cpu',
+          player1_score: currentPlayer.score,
+          player2_score: opponent.score
+        }
+        
+        const apiUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://export9.oec.world'
+        const response = await fetch(`${apiUrl}/api/games/result`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(gameResults)
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          setEloChange({
+            change: result.player1_elo_change,
+            newElo: user.elo_rating + result.player1_elo_change
           })
           
-          if (response.ok) {
-            const result = await response.json()
-            setEloChange({
-              change: result.player1_elo_change,
-              newElo: user.elo_rating + result.player1_elo_change
-            })
-            
-            // Save score to OEC API if user has OEC session
-            if (userId && userId !== '') {
-              await saveScoreToOEC(isWinner || false)
-            }
-            
-            // Refresh user data
-            await refreshUser()
+          // Save score to OEC API if user has OEC session (authenticated users only)
+          if (!isGuest && userId && userId !== '') {
+            await saveScoreToOEC(isWinner || false)
           }
+          
+          // Refresh user data
+          await refreshUser()
         }
         
         // Mark this game as processed to prevent duplicate updates

@@ -174,18 +174,18 @@ export default function GameBoard({
       {/* Header */}
       <div className="mb-3 rounded-lg overflow-hidden">
         {/* Mobile Layout */}
-        <div className="sm:hidden flex items-center justify-between px-2">
+        <div className="sm:hidden flex items-center justify-between px-2 py-1">
           <div className="text-sm font-semibold" style={{ color: '#fbe4c7', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
             {gameState.current_round}/{gameState.total_rounds}
           </div>
           <img 
             src="/logo.png" 
             alt="Export Holdem" 
-            className="h-20 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+            className="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity"
             style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))' }}
             onClick={handleLogoClick}
           />
-          <div className="w-[60px]"></div>
+          <div className="w-[40px]"></div>
         </div>
 
         {/* Desktop Layout */}

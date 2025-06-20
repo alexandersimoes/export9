@@ -257,6 +257,34 @@ async def get_leaderboard(limit: int = 50):
 async def record_game_result(request: GameResultRequest):
   """Record game result and update ELO ratings"""
   try:
+    # Check for duplicate game processing (same players, scores within last 5 minutes)
+    conn = db.get_connection()
+    try:
+      duplicate_check = conn.execute('''
+        SELECT id, player1_elo_before, player1_elo_after, player2_elo_before, player2_elo_after, elo_change 
+        FROM game_records 
+        WHERE player1_id = ? AND player2_id = ? 
+        AND player1_score = ? AND player2_score = ? 
+        AND created_at > datetime('now', '-5 minutes')
+        LIMIT 1
+      ''', (request.player1_id, request.player2_id, 
+            request.player1_score, request.player2_score)).fetchone()
+      
+      if duplicate_check:
+        logger.info(f"Duplicate game result detected for players {request.player1_id} vs {request.player2_id}")
+        # Return the actual ELO changes from the original game processing
+        player1_elo_change = duplicate_check[2] - duplicate_check[1]  # after - before
+        player2_elo_change = duplicate_check[4] - duplicate_check[3]  # after - before
+        return {
+          "success": True,
+          "message": "Game already processed",
+          "player1_elo_change": player1_elo_change,
+          "player2_elo_change": player2_elo_change,
+          "elo_points_exchanged": duplicate_check[5]
+        }
+    finally:
+      conn.close()
+
     # Get player1 (human player)
     player1 = db.get_user_by_id(request.player1_id)
     if not player1:

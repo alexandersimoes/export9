@@ -165,6 +165,12 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
                     setGuestName(value)
                   }
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleGuestPlayWithName()
+                  }
+                }}
                 placeholder="Enter your name"
                 className="w-full px-4 py-2 border-2 border-poker-strong-bg rounded-lg focus:outline-none focus:border-poker-accent bg-white text-poker-dark-text"
                 maxLength={20}
