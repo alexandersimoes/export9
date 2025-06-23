@@ -44,7 +44,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
     try {
       const geoData = getStoredGeolocationData()
       
-      await fetch('https://oec.world/api/games/score', {
+      await fetch('https://dev.oec.world/api/games/score', {
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
