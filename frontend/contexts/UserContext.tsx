@@ -165,25 +165,21 @@ export function UserProvider({ children }: UserProviderProps) {
 
           if (session?.history) {
             const elo = session.history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].submission.newElo;
+            const gamesPlayed = session.history.length;
+            const wins = session.history.filter(h => h.won).length;
+            const losses = session.history.filter(h => !h.won).length;
+            const draws = 0;
+            const eloCategory = elo < 1200 ? 'Beginner' : elo < 1400 ? 'Intermediate' : elo < 1600 ? 'Advanced' : 'Expert';
             
             setUser({
               ...defaultUserData, 
               elo_rating: elo,
-              games_played: session.history.length,
-              wins: session.history.filter(h => h.won).length,
-              losses: session.history.filter(h => !h.won).length,
-              draws: 0,
-              elo_category: 'Beginner'
+              games_played: gamesPlayed,
+              wins: wins,
+              losses: losses,
+              draws: draws,
+              elo_category: eloCategory
             });
-            // elo_rating: userData.elo_rating,
-            // games_played: userData.games_played,
-            // wins: userData.wins,
-            // losses: userData.losses,
-            // draws: userData.draws,
-            // username: userData.username,
-            // display_name: userData.display_name,
-            // created_at: userData.created_at || new Date().toISOString(),
-            // last_played: userData.last_played || new Date().toISOString()
           }
           else {
             setUser(defaultUserData);
