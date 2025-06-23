@@ -25,7 +25,6 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
   const session: OECSession = useOECSession()
   const [eloChange, setEloChange] = useState<EloChange | null>(null)
   const [processingElo, setProcessingElo] = useState(true)
-  const [oecScoreSaved, setOecScoreSaved] = useState(false)
   
   // Use game ID + user ID + player scores as unique identifier to prevent duplicate processing
   const gameResultId = `${gameState.game_id}-${userId}-${gameState.players.map(p => p.score).join('-')}`
@@ -86,6 +85,10 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
         return
       }
 
+      // Check if OEC score has been saved for this game
+      const oecSavedGames = JSON.parse(localStorage.getItem('export9_oec_saved_games') || '[]')
+      const alreadySavedToOEC = oecSavedGames.includes(gameResultId)
+
       try {
         // All users (guests and authenticated) now use the backend API system
         // since guest users are created in the database
@@ -115,7 +118,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
           })
           
           // Save score to OEC API if user has OEC session (authenticated users only)
-          if (!isGuest && userId && userId !== '' && currentPlayer && opponent && !oecScoreSaved) {
+          if (!isGuest && userId && userId !== '' && currentPlayer && opponent && !alreadySavedToOEC) {
             const gameScores = {
               playerScore: currentPlayer.score,
               opponentScore: opponent.score
@@ -141,7 +144,12 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
             }
             
             await saveScoreToOEC(isWinner || false, userId, gameScores, eloData, opponentData)
-            setOecScoreSaved(true) // Mark as saved to prevent duplicate saves
+            
+            // Mark this game as saved to OEC to prevent duplicate saves
+            const updatedOecSavedGames = [...oecSavedGames, gameResultId]
+            // Keep only last 50 saved games to prevent unlimited growth
+            const trimmedOecSavedGames = updatedOecSavedGames.slice(-50)
+            localStorage.setItem('export9_oec_saved_games', JSON.stringify(trimmedOecSavedGames))
           }
           
           // Refresh user data
