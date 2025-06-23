@@ -164,10 +164,11 @@ export function UserProvider({ children }: UserProviderProps) {
           )
 
           if (session?.history) {
+            const elo = session.history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].submission.newElo;
             
             setUser({
               ...defaultUserData, 
-              elo_rating: 1200,
+              elo_rating: elo,
               games_played: session.history.length,
               wins: session.history.filter(h => h.won).length,
               losses: session.history.filter(h => !h.won).length,
