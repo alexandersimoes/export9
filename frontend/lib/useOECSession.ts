@@ -25,14 +25,14 @@ export function useOECSession() {
   useEffect(() => {
     // Step 1: Ask parent for session
     const targetOrigins = [
-      "http://localhost:3000",
+      // "http://localhost:3000",
       "https://oec.world",
       "https://dev.oec.world",
       "https://staging.oec.world",
     ];
 
     targetOrigins.forEach((origin) => {
-      window.parent.postMessage({ type: 'requestSession', game: 'export-holdem' }, origin);
+      window.parent.postMessage({ type: 'requestSession', game: 'export-holdem', history: true }, origin);
       // window.parent.postMessage('requestSession', origin);
     });
 
