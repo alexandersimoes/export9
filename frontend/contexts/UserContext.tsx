@@ -66,12 +66,12 @@ export function UserProvider({ children }: UserProviderProps) {
       const storedUserId = localStorage.getItem('export9_user_id')
       const storedIsGuest = localStorage.getItem('export9_is_guest') === 'true'
       
-      if (storedUserId) {
+      if (storedUserId && storedIsGuest) {
         // Try to fetch user from backend
         const response = await fetch(`${getApiUrl()}/api/users/${storedUserId}`)
         if (response.ok) {
           const userData = await response.json()
-          console.log('!!!initializeUserState userData!!!', userData)
+          console.log('!!!init guest user!!!', userData)
           setUser(userData)
           
           if (userData.is_guest) {
@@ -84,7 +84,13 @@ export function UserProvider({ children }: UserProviderProps) {
           localStorage.removeItem('export9_user_id')
           localStorage.removeItem('export9_is_guest')
         }
-      } else if (hasGuestEloData()) {
+      }
+      else if(session && session.id) {
+        console.log('!!!init full user!!!', session)
+        // setUser(session)
+        
+      }
+      else if (hasGuestEloData()) {
         // User has guest ELO data but no backend user - auto-login as guest
         const localGuestData = getGuestEloData()
         if (localGuestData) {
