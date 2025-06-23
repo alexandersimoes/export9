@@ -36,10 +36,9 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
   const isDraw = currentPlayer && opponent && currentPlayer.score === opponent.score
 
   // Save score to OEC API for authenticated users
-  const saveScoreToOEC = async (won: boolean) => {
-    console.log('!!!session!!!', session)
-    if (!session) return
-
+  const saveScoreToOEC = async (won: boolean, userId: string) => {
+    // console.log('!!!session!!!', session)
+    // if (!session) return
     
     try {
       const geoData = getStoredGeolocationData()
@@ -54,7 +53,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
           game: 'export-holdem',
           meta: {
             user: geoData,
-            userId: session.id,
+            userId,
           },
           answer: {},
           submission: {},
@@ -109,7 +108,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
           
           // Save score to OEC API if user has OEC session (authenticated users only)
           if (!isGuest && userId && userId !== '') {
-            await saveScoreToOEC(isWinner || false)
+            await saveScoreToOEC(isWinner || false, userId)
           }
           
           // Refresh user data
