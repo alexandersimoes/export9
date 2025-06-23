@@ -43,7 +43,6 @@ export function UserProvider({ children }: UserProviderProps) {
   const [guestData, setGuestData] = useState<GuestEloData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const session: OECSession = useOECSession()
-  console.log('!!!UserProvider session!!!', session)
 
   const isAuthenticated = user !== null && !user.is_guest
   const isGuest = user !== null && user.is_guest
@@ -85,11 +84,6 @@ export function UserProvider({ children }: UserProviderProps) {
           localStorage.removeItem('export9_is_guest')
         }
       }
-      else if(session && session.id) {
-        console.log('!!!init full user!!!', session)
-        // setUser(session)
-        
-      }
       else if (hasGuestEloData()) {
         // User has guest ELO data but no backend user - auto-login as guest
         const localGuestData = getGuestEloData()
@@ -115,6 +109,7 @@ export function UserProvider({ children }: UserProviderProps) {
       
       if (response.ok) {
         const userData = await response.json()
+        console.log('!!!createGuestUserFromLocalData userData!!!', userData)
         setUser(userData)
         localStorage.setItem('export9_user_id', userData.id.toString())
         localStorage.setItem('export9_is_guest', 'true')
@@ -131,6 +126,20 @@ export function UserProvider({ children }: UserProviderProps) {
       
       if (session) {
 
+        const defaultUserData = {
+          id: session.id,
+          username: session.name || session.email || `user_${session.id}`,
+          display_name: session.name || session.email || `User ${session.id}`,
+          email: session.email,
+          is_guest: false,
+          elo_rating: 1200,
+          games_played: 0,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          elo_category: 'Beginner',
+        }
+
         console.log('!!!LOGIN FULL SESSION!!!', session)
         // Create/get OEC user from backend
         const response = await fetch(`${getApiUrl()}/api/users/auth`, {
@@ -145,19 +154,46 @@ export function UserProvider({ children }: UserProviderProps) {
         })
         
         if (response.ok) {
-          const userData = await response.json()
-          setUser(userData)
+          // const userData = await response.json()
+          // setUser(userData)
           setGuestData(null) // Clear guest data
           
           // Initialize geolocation tracking for new authenticated users
           initializeUserGeolocation().catch(error => 
             console.warn('Geolocation initialization failed:', error)
           )
-          
+
+          if (session?.history) {
+            
+            setUser({
+              ...defaultUserData, 
+              elo_rating: 1200,
+              games_played: session.history.length,
+              wins: 69,
+              losses: 420,
+              draws: 69,
+              elo_category: 'Beginner'
+            });
+            // elo_rating: userData.elo_rating,
+            // games_played: userData.games_played,
+            // wins: userData.wins,
+            // losses: userData.losses,
+            // draws: userData.draws,
+            // username: userData.username,
+            // display_name: userData.display_name,
+            // created_at: userData.created_at || new Date().toISOString(),
+            // last_played: userData.last_played || new Date().toISOString()
+          }
+          else {
+            setUser(defaultUserData);
+          }
+          setGuestData(null);
+                    
           // Store user session
-          localStorage.setItem('export9_user_id', userData.id.toString())
+          localStorage.setItem('export9_user_id', session.id.toString())
           localStorage.setItem('export9_is_guest', 'false')
           localStorage.setItem('export9_oec_session', JSON.stringify(session))
+          localStorage.setItem('export9_history', JSON.stringify(session?.history || []))
           
           return true
         } else {

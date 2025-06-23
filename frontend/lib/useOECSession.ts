@@ -6,6 +6,7 @@ export interface SessionType {
   name: string;
   email: string;
   image: string;
+  history: any[];
 }
 
 export type OECSession = SessionType | false | null;
