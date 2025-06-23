@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { GameState } from '@/types/game'
 import { useUser } from '@/contexts/UserContext'
 import { updateGuestElo, getGuestEloData } from '@/lib/guestElo'
@@ -25,6 +25,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
   const session: OECSession = useOECSession()
   const [eloChange, setEloChange] = useState<EloChange | null>(null)
   const [processingElo, setProcessingElo] = useState(true)
+  const oecSaveAttempted = useRef(false)
   
   // Use game ID + user ID + player scores as unique identifier to prevent duplicate processing
   const gameResultId = `${gameState.game_id}-${userId}-${gameState.players.map(p => p.score).join('-')}`
@@ -88,6 +89,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
       // Check if OEC score has been saved for this game
       const oecSavedGames = JSON.parse(localStorage.getItem('export9_oec_saved_games') || '[]')
       const alreadySavedToOEC = oecSavedGames.includes(gameResultId)
+      console.log('OEC save check:', { gameResultId, alreadySavedToOEC, oecSavedGames })
 
       try {
         // All users (guests and authenticated) now use the backend API system
@@ -118,7 +120,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
           })
           
           // Save score to OEC API if user has OEC session (authenticated users only)
-          if (!isGuest && userId && userId !== '' && currentPlayer && opponent && !alreadySavedToOEC) {
+          if (!isGuest && userId && userId !== '' && currentPlayer && opponent && !alreadySavedToOEC && !oecSaveAttempted.current) {
             const gameScores = {
               playerScore: currentPlayer.score,
               opponentScore: opponent.score
@@ -143,13 +145,17 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
               }
             }
             
-            await saveScoreToOEC(isWinner || false, userId, gameScores, eloData, opponentData)
+            // Mark as attempted immediately to prevent race conditions
+            oecSaveAttempted.current = true
             
-            // Mark this game as saved to OEC to prevent duplicate saves
+            // Mark as saved in localStorage BEFORE calling to prevent race conditions
             const updatedOecSavedGames = [...oecSavedGames, gameResultId]
-            // Keep only last 50 saved games to prevent unlimited growth
             const trimmedOecSavedGames = updatedOecSavedGames.slice(-50)
             localStorage.setItem('export9_oec_saved_games', JSON.stringify(trimmedOecSavedGames))
+            
+            // Now save to OEC
+            await saveScoreToOEC(isWinner || false, userId, gameScores, eloData, opponentData)
+            console.log('OEC score saved for game:', gameResultId)
           }
           
           // Refresh user data
