@@ -65,8 +65,6 @@ export function useOECSession() {
         return;
       }
 
-      console.log('!!!handleMessage event!!!', event)
-
       if (event.data?.type === 'session') {
         setSession(event.data.session);
       }
