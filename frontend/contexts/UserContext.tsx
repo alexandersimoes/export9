@@ -169,9 +169,9 @@ export function UserProvider({ children }: UserProviderProps) {
               ...defaultUserData, 
               elo_rating: 1200,
               games_played: session.history.length,
-              wins: 69,
-              losses: 420,
-              draws: 69,
+              wins: session.history.filter(h => h.won).length,
+              losses: session.history.filter(h => !h.won).length,
+              draws: 0,
               elo_category: 'Beginner'
             });
             // elo_rating: userData.elo_rating,
