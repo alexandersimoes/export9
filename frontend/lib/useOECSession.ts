@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 // Session type based on the comment format
 export interface SessionType {
@@ -25,35 +25,53 @@ export function useOECSession() {
   useEffect(() => {
     // Step 1: Ask parent for session
     const targetOrigins = [
-      // "http://localhost:3000",
-      "https://oec.world",
-      "https://dev.oec.world",
-      "https://staging.oec.world",
+      // 'http://localhost:3000',
+      'https://oec.world',
+      'https://dev.oec.world',
+      'https://staging.oec.world',
     ];
 
-    targetOrigins.forEach((origin) => {
-      window.parent.postMessage({ type: 'requestSession', game: 'export-holdem', history: true }, origin);
-      // window.parent.postMessage('requestSession', origin);
-    });
+    let parentOrigin = '';
+    try {
+      // Try to get the parent origin from document.referrer
+      const referrerUrl = new URL(document.referrer);
+      parentOrigin = referrerUrl.origin;
+    } catch {
+      // fallback to '*'
+    }
+
+    // Only send to the matching origin in the list
+    const matchedOrigin = targetOrigins.find(origin => origin === parentOrigin);
+    if (parentOrigin !== '' && matchedOrigin) {
+      window.parent.postMessage({
+        type: 'requestSession',
+        game: 'export-holdem',
+        history: true, // set to true to include user's history
+      }, matchedOrigin);
+    } else {
+      console.warn('Parent origin not allowed');
+    }
 
     // Step 2: Handle response
     const handleMessage = (event: MessageEvent) => {
       // Allow localhost, oec.world subdomain or the root domain
       const url = new URL(event.origin);
       const { hostname } = url;
-      const isLocalhost = hostname === "localhost";
-      const isOecWorld =
-        hostname.endsWith(".oec.world") || hostname === "oec.world";
+      const isLocalhost = false;
+      const isOecWorld = hostname.endsWith('.oec.world') || hostname === 'oec.world';
 
-      if (!isLocalhost && !isOecWorld) return;
+      if (!isLocalhost && !isOecWorld) {
+        console.warn('Origin not allowed');
+        return;
+      }
 
-      if (event.data?.type === "session") {
+      if (event.data?.type === 'session') {
         setSession(event.data.session);
       }
     };
 
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
   return session;

@@ -42,6 +42,8 @@ export function UserProvider({ children }: UserProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [guestData, setGuestData] = useState<GuestEloData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const session: OECSession = useOECSession()
+  console.log('!!!UserProvider session!!!', session)
 
   const isAuthenticated = user !== null && !user.is_guest
   const isGuest = user !== null && user.is_guest
