@@ -25,6 +25,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
   const session: OECSession = useOECSession()
   const [eloChange, setEloChange] = useState<EloChange | null>(null)
   const [processingElo, setProcessingElo] = useState(true)
+  const [oecScoreSaved, setOecScoreSaved] = useState(false)
   
   // Use game ID + user ID + player scores as unique identifier to prevent duplicate processing
   const gameResultId = `${gameState.game_id}-${userId}-${gameState.players.map(p => p.score).join('-')}`
@@ -114,7 +115,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
           })
           
           // Save score to OEC API if user has OEC session (authenticated users only)
-          if (!isGuest && userId && userId !== '' && currentPlayer && opponent) {
+          if (!isGuest && userId && userId !== '' && currentPlayer && opponent && !oecScoreSaved) {
             const gameScores = {
               playerScore: currentPlayer.score,
               opponentScore: opponent.score
@@ -140,6 +141,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
             }
             
             await saveScoreToOEC(isWinner || false, userId, gameScores, eloData, opponentData)
+            setOecScoreSaved(true) // Mark as saved to prevent duplicate saves
           }
           
           // Refresh user data
