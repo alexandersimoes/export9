@@ -36,10 +36,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
   const isDraw = currentPlayer && opponent && currentPlayer.score === opponent.score
 
   // Save score to OEC API for authenticated users
-  const saveScoreToOEC = async (won: boolean, userId: string) => {
-    // console.log('!!!session!!!', session)
-    // if (!session) return
-    
+  const saveScoreToOEC = async (won: boolean, userId: string, gameScores: { playerScore: number, opponentScore: number }, eloData: { oldElo: number, newElo: number }, opponentData: any) => {
     try {
       const geoData = getStoredGeolocationData()
       
@@ -54,9 +51,17 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
           meta: {
             user: geoData,
             userId,
+            opponent: opponentData
           },
-          answer: {},
-          submission: {},
+          answer: {
+            playerScore: gameScores.playerScore,
+            opponentScore: gameScores.opponentScore,
+          },
+          submission: {
+            oldElo: eloData.oldElo,
+            newElo: eloData.newElo,
+            eloChange: eloData.newElo - eloData.oldElo
+          },
           won: won,
         }),
       })
@@ -101,14 +106,40 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
         
         if (response.ok) {
           const result = await response.json()
+          const newEloRating = user.elo_rating + result.player1_elo_change
+          
           setEloChange({
             change: result.player1_elo_change,
-            newElo: user.elo_rating + result.player1_elo_change
+            newElo: newEloRating
           })
           
           // Save score to OEC API if user has OEC session (authenticated users only)
-          if (!isGuest && userId && userId !== '') {
-            await saveScoreToOEC(isWinner || false, userId)
+          if (!isGuest && userId && userId !== '' && currentPlayer && opponent) {
+            const gameScores = {
+              playerScore: currentPlayer.score,
+              opponentScore: opponent.score
+            }
+            const eloData = {
+              oldElo: user.elo_rating,
+              newElo: newEloRating
+            }
+            
+            // Determine opponent data - check if it's CPU or human player
+            const opponentUser = gameState.players.find(p => p.name !== playerName)
+            let opponentData
+            
+            if (gameResults.player2_id === 'cpu') {
+              opponentData = 'cpu'
+            } else {
+              // For human opponents, include their user data if available
+              opponentData = {
+                user_id: (opponentUser as any)?.user_id,
+                name: opponentUser?.name,
+                score: opponentUser?.score
+              }
+            }
+            
+            await saveScoreToOEC(isWinner || false, userId, gameScores, eloData, opponentData)
           }
           
           // Refresh user data
