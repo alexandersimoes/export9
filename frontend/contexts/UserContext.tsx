@@ -264,15 +264,14 @@ export function UserProvider({ children }: UserProviderProps) {
     if (!user) return
     
     try {
-      // Both guest and authenticated users are now stored in the backend database
-      // so we fetch fresh data from the API for both
-      const response = await fetch(`${getApiUrl()}/api/users/${user.id}`)
-      if (response.ok) {
-        const userData = await response.json()
-        setUser(userData)
-        
-        // For guest users, also update localStorage for backward compatibility
-        if (userData.is_guest) {
+      if (user.is_guest) {
+        // Guest users: use backend database
+        const response = await fetch(`${getApiUrl()}/api/users/${user.id}`)
+        if (response.ok) {
+          const userData = await response.json()
+          setUser(userData)
+          
+          // Also update localStorage for backward compatibility
           const guestData: GuestEloData = {
             elo_rating: userData.elo_rating,
             games_played: userData.games_played,
@@ -285,12 +284,46 @@ export function UserProvider({ children }: UserProviderProps) {
             last_played: userData.last_played || new Date().toISOString()
           }
           setGuestData(guestData)
-          // Update localStorage to keep it in sync
           localStorage.setItem('export9_guest_elo', JSON.stringify(guestData))
         }
+      } else {
+        // OEC authenticated users: use localStorage history only
+        updateUserStatsFromHistory()
       }
     } catch (error) {
       console.error('Failed to refresh user data:', error)
+    }
+  }
+  
+  const updateUserStatsFromHistory = () => {
+    try {
+      const history = JSON.parse(localStorage.getItem('export9_history') || '[]')
+      
+      if (history.length > 0) {
+        // Calculate stats from history
+        const latestGame = history.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+        const currentElo = latestGame?.submission?.newElo || 1200
+        const gamesPlayed = history.length
+        const wins = history.filter((h: any) => h.won).length
+        const losses = history.filter((h: any) => !h.won && !h.isDraw).length
+        const draws = history.filter((h: any) => h.isDraw).length
+        const eloCategory = currentElo < 1200 ? 'Beginner' : currentElo < 1400 ? 'Intermediate' : currentElo < 1600 ? 'Advanced' : 'Expert'
+        
+        // Update user with calculated stats
+        if (user) {
+          setUser({
+            ...user,
+            elo_rating: currentElo,
+            games_played: gamesPlayed,
+            wins: wins,
+            losses: losses,
+            draws: draws,
+            elo_category: eloCategory
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update stats from history:', error)
     }
   }
 

@@ -71,6 +71,78 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
     }
   }
 
+  // Handle game end for OEC authenticated users (localStorage only)
+  const handleOECUserGameEnd = async (currentPlayer: any, opponent: any, isWinner: boolean, isDraw: boolean, alreadySavedToOEC: boolean) => {
+    if (!currentPlayer || !opponent) return
+    
+    // Calculate ELO change (simplified calculation for OEC users)
+    const oldElo = user?.elo_rating || 1200
+    const kFactor = (user?.games_played || 0) < 30 ? 32 : 16
+    const expectedScore = 0.5 // Assume equal skill for now
+    const actualScore = isWinner ? 1 : (isDraw ? 0.5 : 0)
+    const eloChange = Math.round(kFactor * (actualScore - expectedScore))
+    const newElo = Math.max(100, Math.min(3000, oldElo + eloChange))
+    
+    // Update ELO display
+    setEloChange({
+      change: eloChange,
+      newElo: newElo
+    })
+    
+    // Create game history entry
+    const gameHistoryEntry = {
+      game: 'export-holdem',
+      meta: {
+        user: getStoredGeolocationData(),
+        userId: user?.id,
+        opponent: 'cpu' // Most games are vs CPU
+      },
+      answer: {
+        playerScore: currentPlayer.score,
+        opponentScore: opponent.score
+      },
+      submission: {
+        oldElo: oldElo,
+        newElo: newElo,
+        eloChange: eloChange
+      },
+      won: isWinner,
+      date: new Date().toISOString()
+    }
+    
+    // Update localStorage history
+    const existingHistory = JSON.parse(localStorage.getItem('export9_history') || '[]')
+    const updatedHistory = [...existingHistory, gameHistoryEntry]
+    localStorage.setItem('export9_history', JSON.stringify(updatedHistory))
+    
+    // Update user stats from the new history data
+    await refreshUser()
+    
+    // Save to OEC API if not already saved
+    if (!alreadySavedToOEC && !oecSaveAttempted.current) {
+      const gameScores = {
+        playerScore: currentPlayer.score,
+        opponentScore: opponent.score
+      }
+      const eloData = {
+        oldElo: oldElo,
+        newElo: newElo
+      }
+      
+      // Mark as attempted immediately to prevent race conditions
+      oecSaveAttempted.current = true
+      
+      // Mark as saved in localStorage BEFORE calling to prevent race conditions
+      const updatedOecSavedGames = [...oecSavedGames, gameResultId]
+      const trimmedOecSavedGames = updatedOecSavedGames.slice(-50)
+      localStorage.setItem('export9_oec_saved_games', JSON.stringify(trimmedOecSavedGames))
+      
+      // Save to OEC API
+      await saveScoreToOEC(isWinner, user?.id || '', gameScores, eloData, 'cpu')
+      console.log('OEC score saved for game:', gameResultId)
+    }
+  }
+
   // Process ELO changes
   useEffect(() => {
     const processEloChanges = async () => {
@@ -92,74 +164,39 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
       console.log('OEC save check:', { gameResultId, alreadySavedToOEC, oecSavedGames })
 
       try {
-        // All users (guests and authenticated) now use the backend API system
-        // since guest users are created in the database
-        const opponentUser = gameState.players.find(p => p.name !== playerName)
+        if (!isGuest) {
+          // OEC authenticated users: only update localStorage, don't use backend database
+          await handleOECUserGameEnd(currentPlayer, opponent, isWinner, isDraw, alreadySavedToOEC)
+        } else {
+          // Guest users: use backend API system
+          const opponentUser = gameState.players.find(p => p.name !== playerName)
 
-        const gameResults = {
-          player1_id: user.id,
-          player2_id: (opponentUser as any).user_id || 'cpu',
-          player1_score: currentPlayer.score,
-          player2_score: opponent.score
-        }
-        
-        const apiUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://export9.oec.world'
-        const response = await fetch(`${apiUrl}/api/games/result`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(gameResults)
-        })
-        
-        if (response.ok) {
-          const result = await response.json()
-          const newEloRating = user.elo_rating + result.player1_elo_change
-          
-          setEloChange({
-            change: result.player1_elo_change,
-            newElo: newEloRating
-          })
-          
-          // Save score to OEC API if user has OEC session (authenticated users only)
-          if (!isGuest && userId && userId !== '' && currentPlayer && opponent && !alreadySavedToOEC && !oecSaveAttempted.current) {
-            const gameScores = {
-              playerScore: currentPlayer.score,
-              opponentScore: opponent.score
-            }
-            const eloData = {
-              oldElo: user.elo_rating,
-              newElo: newEloRating
-            }
-            
-            // Determine opponent data - check if it's CPU or human player
-            const opponentUser = gameState.players.find(p => p.name !== playerName)
-            let opponentData
-            
-            if (gameResults.player2_id === 'cpu') {
-              opponentData = 'cpu'
-            } else {
-              // For human opponents, include their user data if available
-              opponentData = {
-                user_id: (opponentUser as any)?.user_id,
-                name: opponentUser?.name,
-                score: opponentUser?.score
-              }
-            }
-            
-            // Mark as attempted immediately to prevent race conditions
-            oecSaveAttempted.current = true
-            
-            // Mark as saved in localStorage BEFORE calling to prevent race conditions
-            const updatedOecSavedGames = [...oecSavedGames, gameResultId]
-            const trimmedOecSavedGames = updatedOecSavedGames.slice(-50)
-            localStorage.setItem('export9_oec_saved_games', JSON.stringify(trimmedOecSavedGames))
-            
-            // Now save to OEC
-            await saveScoreToOEC(isWinner || false, userId, gameScores, eloData, opponentData)
-            console.log('OEC score saved for game:', gameResultId)
+          const gameResults = {
+            player1_id: user.id,
+            player2_id: (opponentUser as any).user_id || 'cpu',
+            player1_score: currentPlayer.score,
+            player2_score: opponent.score
           }
           
-          // Refresh user data
-          await refreshUser()
+          const apiUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://export9.oec.world'
+          const response = await fetch(`${apiUrl}/api/games/result`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(gameResults)
+          })
+          
+          if (response.ok) {
+            const result = await response.json()
+            const newEloRating = user.elo_rating + result.player1_elo_change
+            
+            setEloChange({
+              change: result.player1_elo_change,
+              newElo: newEloRating
+            })
+            
+            // Refresh user data for guest users
+            await refreshUser()
+          }
         }
         
         // Mark this game as processed to prevent duplicate updates
