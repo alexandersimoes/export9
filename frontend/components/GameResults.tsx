@@ -75,6 +75,19 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
   const handleOECUserGameEnd = async (currentPlayer: any, opponent: any, isWinner: boolean, isDraw: boolean, alreadySavedToOEC: boolean, oecSavedGames: string[]) => {
     if (!currentPlayer || !opponent) return
     
+    // Check if we've already added this game to history
+    const existingHistory = JSON.parse(localStorage.getItem('export9_history') || '[]')
+    const gameAlreadyInHistory = existingHistory.some((h: any) => 
+      h.date && Math.abs(new Date(h.date).getTime() - new Date().getTime()) < 30000 && // Within 30 seconds
+      h.answer?.playerScore === currentPlayer.score && 
+      h.answer?.opponentScore === opponent.score
+    )
+    
+    if (gameAlreadyInHistory) {
+      console.log('Game already in history, skipping localStorage update')
+      return
+    }
+    
     // Calculate ELO change (simplified calculation for OEC users)
     const oldElo = user?.elo_rating || 1200
     const kFactor = (user?.games_played || 0) < 30 ? 32 : 16
@@ -111,9 +124,10 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
     }
     
     // Update localStorage history
-    const existingHistory = JSON.parse(localStorage.getItem('export9_history') || '[]')
+    console.log('Adding game to history:', { gameHistoryEntry, existingHistoryLength: existingHistory.length })
     const updatedHistory = [...existingHistory, gameHistoryEntry]
     localStorage.setItem('export9_history', JSON.stringify(updatedHistory))
+    console.log('Updated history length:', updatedHistory.length)
     
     // Update user stats from the new history data
     await refreshUser()
@@ -166,6 +180,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
       try {
         if (!isGuest) {
           // OEC authenticated users: only update localStorage, don't use backend database
+          console.log('Processing OEC user game end:', { gameResultId, alreadySavedToOEC })
           await handleOECUserGameEnd(currentPlayer, opponent, isWinner, isDraw, alreadySavedToOEC, oecSavedGames)
         } else {
           // Guest users: use backend API system
