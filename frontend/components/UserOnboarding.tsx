@@ -124,7 +124,8 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
               </button>
             ) : (
               <a
-                href={`https://oec.world/en/login?redirect=${window.location.origin}`}
+                target="_top"
+                href={`/en/login?redirect=/en/games/export-holdem`}
                 className="w-full poker-chip text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
               >
                 Sign in with OEC Account
