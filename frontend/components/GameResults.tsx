@@ -33,8 +33,8 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
   const currentPlayer = gameState.players.find(p => p.name === playerName)
   const opponent = gameState.players.find(p => p.name !== playerName)
   
-  const isWinner = currentPlayer && opponent && currentPlayer.score > opponent.score
-  const isDraw = currentPlayer && opponent && currentPlayer.score === opponent.score
+  const isWinner = !!(currentPlayer && opponent && currentPlayer.score > opponent.score)
+  const isDraw = !!(currentPlayer && opponent && currentPlayer.score === opponent.score)
 
   // Save score to OEC API for authenticated users
   const saveScoreToOEC = async (won: boolean, userId: string, gameScores: { playerScore: number, opponentScore: number }, eloData: { oldElo: number, newElo: number }, opponentData: any) => {
@@ -72,7 +72,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
   }
 
   // Handle game end for OEC authenticated users (localStorage only)
-  const handleOECUserGameEnd = async (currentPlayer: any, opponent: any, isWinner: boolean, isDraw: boolean, alreadySavedToOEC: boolean) => {
+  const handleOECUserGameEnd = async (currentPlayer: any, opponent: any, isWinner: boolean, isDraw: boolean, alreadySavedToOEC: boolean, oecSavedGames: string[]) => {
     if (!currentPlayer || !opponent) return
     
     // Calculate ELO change (simplified calculation for OEC users)
@@ -166,7 +166,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
       try {
         if (!isGuest) {
           // OEC authenticated users: only update localStorage, don't use backend database
-          await handleOECUserGameEnd(currentPlayer, opponent, isWinner, isDraw, alreadySavedToOEC)
+          await handleOECUserGameEnd(currentPlayer, opponent, isWinner, isDraw, alreadySavedToOEC, oecSavedGames)
         } else {
           // Guest users: use backend API system
           const opponentUser = gameState.players.find(p => p.name !== playerName)
