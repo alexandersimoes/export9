@@ -243,27 +243,35 @@ export default function GameBoard({
         border: '1px solid rgba(212, 184, 150, 0.5)' 
       }}>
         <div className="flex items-center justify-center gap-2 sm:gap-6 px-2">
-          {gameState.players.map((player, index) => (
-            <div key={player.id} className="flex items-center gap-1 sm:gap-2 min-w-0">
-              <div className="flex-shrink-0">
-              {getPlayerFlag(player)}
+          {(() => {
+            // Always show current player first, then opponent
+            const currentPlayer = gameState.players.find(p => p.name === playerName)
+            const opponent = gameState.players.find(p => p.name !== playerName)
+            const orderedPlayers = currentPlayer && opponent ? [currentPlayer, opponent] : gameState.players
+            
+            return orderedPlayers.map((player, index) => (
+              <div key={player.id} className="flex items-center gap-1 sm:gap-2 min-w-0">
+                <div className="flex-shrink-0">
+                {getPlayerFlag(player)}
+                </div>
+                <span className="font-semibold text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none" style={{ color: 'var(--poker-dark-text)' }}>
+                  {player.name}
+                  {player.name === playerName && <span className="ml-1 opacity-75">(You)</span>}
+                </span>
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm flex-shrink-0" style={{ 
+                  backgroundColor: 'var(--poker-accent)', 
+                  color: 'var(--poker-dark-text)',
+                  border: '2px solid #e6a82e',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                }}>
+                  {player.score || 0}
+                </div>
+                {index === 0 && (
+                  <span className="text-xs sm:text-sm font-medium mx-1 sm:mx-2 flex-shrink-0" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>vs</span>
+                )}
               </div>
-              <span className="font-semibold text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none" style={{ color: 'var(--poker-dark-text)' }}>
-                {player.name}
-              </span>
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm flex-shrink-0" style={{ 
-                backgroundColor: 'var(--poker-accent)', 
-                color: 'var(--poker-dark-text)',
-                border: '2px solid #e6a82e',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-              }}>
-                {player.score || 0}
-              </div>
-              {index === 0 && (
-                <span className="text-xs sm:text-sm font-medium mx-1 sm:mx-2 flex-shrink-0" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>vs</span>
-              )}
-            </div>
-          ))}
+            ))
+          })()}
         </div>
       </div>
 

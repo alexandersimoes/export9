@@ -126,8 +126,8 @@ export function UserProvider({ children }: UserProviderProps) {
 
         const defaultUserData = {
           id: session.id,
-          username: session.name || session.email || `user_${session.id}`,
-          display_name: session.name || session.email || `User ${session.id}`,
+          username: session.name || session.email.split('@')[0] || `user_${session.id}`,
+          display_name: session.name || session.email.split('@')[0] || `User ${session.id}`,
           email: session.email,
           is_guest: false,
           elo_rating: 1200,
@@ -144,8 +144,8 @@ export function UserProvider({ children }: UserProviderProps) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             oec_user_id: session.id.toString(),
-            username: session.name || session.email || `user_${session.id}`,
-            display_name: session.name || session.email || `User ${session.id}`,
+            username: session.name || session.email.split('@')[0] || `user_${session.id}`,
+            display_name: session.name || session.email.split('@')[0] || `User ${session.id}`,
             email: session.email
           })
         })

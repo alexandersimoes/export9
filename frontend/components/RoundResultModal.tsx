@@ -95,42 +95,49 @@ export default function RoundResultModal({ roundResult, playerName, currentProdu
 
           {/* Cards played and export values */}
           <div className="space-y-4 mb-6">
-            {roundResult.players.map((player) => (
-              <div 
-                key={player.id}
-                className="p-4 rounded-lg border-2"
-                style={{
-                  backgroundColor: player.is_round_winner ? '#fff7e6' : '#f9f7f4',
-                  borderColor: player.is_round_winner ? 'var(--poker-accent)' : '#d4b896'
-                }}
-              >
-                <div className="flex justify-between items-center">
-                  <div className="text-left">
-                    <div className="font-semibold" style={{ color: 'var(--poker-dark-text)' }}>
-                      {player.name} {player.name === playerName && '(You)'}
-                      {player.is_round_winner && (isTie ? ' 🤝' : ' 🏆')}
+            {(() => {
+              // Always show current player first, then other players
+              const currentPlayerData = roundResult.players.find(p => p.name === playerName)
+              const otherPlayers = roundResult.players.filter(p => p.name !== playerName)
+              const orderedPlayers = currentPlayerData ? [currentPlayerData, ...otherPlayers] : roundResult.players
+              
+              return orderedPlayers.map((player) => (
+                <div 
+                  key={player.id}
+                  className="p-4 rounded-lg border-2"
+                  style={{
+                    backgroundColor: player.is_round_winner ? '#fff7e6' : '#f9f7f4',
+                    borderColor: player.is_round_winner ? 'var(--poker-accent)' : '#d4b896'
+                  }}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="text-left">
+                      <div className="font-semibold" style={{ color: 'var(--poker-dark-text)' }}>
+                        {player.name} {player.name === playerName && '(You)'}
+                        {player.is_round_winner && (isTie ? ' 🤝' : ' 🏆')}
+                      </div>
+                      {player.card_played && (
+                        <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
+                          {getFlagEmoji(player.card_played.country_code)} {player.card_played.country_name}
+                          {player.card_played.country_code === roundResult.winner_country && ' (Winning choice!)'}
+                        </div>
+                      )}
                     </div>
-                    {player.card_played && (
-                      <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
-                        {getFlagEmoji(player.card_played.country_code)} {player.card_played.country_name}
-                        {player.card_played.country_code === roundResult.winner_country && ' (Winning choice!)'}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    {player.card_played && (
-                      <div className="text-lg font-bold" style={{ color: 'var(--poker-accent)' }}>
-                        {needsSmartPrecision 
-                          ? formattedValueMap.get(player.card_played.export_value + '_' + player.card_played.country_code)
-                          : formatExportValue(player.card_played.export_value)
-                        }
-                      </div>
-                    )}
-                    <div className="text-xs" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>exports</div>
+                    <div className="text-right">
+                      {player.card_played && (
+                        <div className="text-lg font-bold" style={{ color: 'var(--poker-accent)' }}>
+                          {needsSmartPrecision 
+                            ? formattedValueMap.get(player.card_played.export_value + '_' + player.card_played.country_code)
+                            : formatExportValue(player.card_played.export_value)
+                          }
+                        </div>
+                      )}
+                      <div className="text-xs" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>exports</div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            })()}
           </div>
 
           {/* Current scores */}
@@ -139,17 +146,25 @@ export default function RoundResultModal({ roundResult, playerName, currentProdu
               Current Scores{isTie && ' (Both players earned a point!)'}:
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              {roundResult.players.map((player) => (
-                <div key={player.id} className="text-center">
-                  <div className="font-semibold" style={{ color: 'var(--poker-dark-text)', lineHeight: '1.2' }}>
-                    {player.name}
-                    {player.is_round_winner && (
-                      <span className="text-sm ml-1" style={{ color: 'var(--poker-accent)' }}>+1</span>
-                    )}
+              {(() => {
+                // Always show current player first, then other players
+                const currentPlayerData = roundResult.players.find(p => p.name === playerName)
+                const otherPlayers = roundResult.players.filter(p => p.name !== playerName)
+                const orderedPlayers = currentPlayerData ? [currentPlayerData, ...otherPlayers] : roundResult.players
+                
+                return orderedPlayers.map((player) => (
+                  <div key={player.id} className="text-center">
+                    <div className="font-semibold" style={{ color: 'var(--poker-dark-text)', lineHeight: '1.2' }}>
+                      {player.name}
+                      {player.name === playerName && ' (You)'}
+                      {player.is_round_winner && (
+                        <span className="text-sm ml-1" style={{ color: 'var(--poker-accent)' }}>+1</span>
+                      )}
+                    </div>
+                    <div className="poker-chip">{player.score}</div>
                   </div>
-                  <div className="poker-chip">{player.score}</div>
-                </div>
-              ))}
+                ))
+              })()}
             </div>
           </div>
 

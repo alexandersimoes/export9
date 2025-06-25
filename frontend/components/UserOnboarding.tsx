@@ -120,7 +120,7 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
                 onClick={() => handleOecLogin(session)}
                 className="w-full poker-chip text-white font-semibold py-3 px-6 rounded-lg hover:opacity-90 transition-opacity"
               >
-                Use {session.name || session.email}
+                Use OEC login ({session.name || session.email.split('@')[0]})
               </button>
             ) : (
               <a
