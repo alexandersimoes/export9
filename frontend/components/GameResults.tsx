@@ -124,10 +124,8 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
     }
     
     // Update localStorage history
-    console.log('Adding game to history:', { gameHistoryEntry, existingHistoryLength: existingHistory.length })
     const updatedHistory = [...existingHistory, gameHistoryEntry]
     localStorage.setItem('export9_history', JSON.stringify(updatedHistory))
-    console.log('Updated history length:', updatedHistory.length)
     
     // Update user stats from the new history data
     await refreshUser()
@@ -175,12 +173,10 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
       // Check if OEC score has been saved for this game
       const oecSavedGames = JSON.parse(localStorage.getItem('export9_oec_saved_games') || '[]')
       const alreadySavedToOEC = oecSavedGames.includes(gameResultId)
-      console.log('OEC save check:', { gameResultId, alreadySavedToOEC, oecSavedGames })
 
       try {
         if (!isGuest) {
           // OEC authenticated users: only update localStorage, don't use backend database
-          console.log('Processing OEC user game end:', { gameResultId, alreadySavedToOEC })
           await handleOECUserGameEnd(currentPlayer, opponent, isWinner, isDraw, alreadySavedToOEC, oecSavedGames)
         } else {
           // Guest users: use backend API system

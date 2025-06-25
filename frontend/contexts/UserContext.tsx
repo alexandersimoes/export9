@@ -70,7 +70,6 @@ export function UserProvider({ children }: UserProviderProps) {
         const response = await fetch(`${getApiUrl()}/api/users/${storedUserId}`)
         if (response.ok) {
           const userData = await response.json()
-          console.log('!!!init guest user!!!', userData)
           setUser(userData)
           
           if (userData.is_guest) {
@@ -109,7 +108,6 @@ export function UserProvider({ children }: UserProviderProps) {
       
       if (response.ok) {
         const userData = await response.json()
-        console.log('!!!createGuestUserFromLocalData userData!!!', userData)
         setUser(userData)
         localStorage.setItem('export9_user_id', userData.id.toString())
         localStorage.setItem('export9_is_guest', 'true')
@@ -140,7 +138,6 @@ export function UserProvider({ children }: UserProviderProps) {
           elo_category: 'Beginner',
         }
 
-        console.log('!!!LOGIN FULL SESSION!!!', session)
         // Create/get OEC user from backend
         const response = await fetch(`${getApiUrl()}/api/users/auth`, {
           method: 'POST',
@@ -163,7 +160,7 @@ export function UserProvider({ children }: UserProviderProps) {
             console.warn('Geolocation initialization failed:', error)
           )
 
-          if (session?.history) {
+          if (session?.history && session.history.length > 0) {
             const elo = session.history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].submission.newElo;
             const gamesPlayed = session.history.length;
             const wins = session.history.filter(h => h.won).length;
