@@ -446,12 +446,12 @@ async def resolve_round(sio: socketio.AsyncServer, game_manager: GameManager, ga
   if game.current_round >= len(game.rounds):
     # Give players time to see final round results before ending game
     import asyncio
-    await asyncio.sleep(1)
+    await asyncio.sleep(5)
     await end_game(sio, game_manager, game_id)
   else:
     # Start next round after showing results for 5 seconds
     import asyncio
-    await asyncio.sleep(1)
+    await asyncio.sleep(5)
     await start_round(sio, game_manager, game_id, game.current_round + 1)
 
 

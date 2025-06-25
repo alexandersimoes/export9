@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { RoundResult, Product } from '@/types/game'
 import { formatExportValue, formatExportValueWithPrecision, getFlagEmoji, getProductEmoji } from '@/lib/utils'
 
-const TIME_BETWEEN_ROUNDS = 1
+const TIME_BETWEEN_ROUNDS = 5
 
 interface RoundResultModalProps {
   roundResult: RoundResult | null
