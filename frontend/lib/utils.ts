@@ -137,7 +137,7 @@ export function getProductEmoji(productId: string): string {
     'cherries': '🍒',
     'diamonds': '💎',
     'copper_ore': '🪨',
-    'cocoa_beans': '🍫',
+    'cocoa_beans': '🫘',
     'fish_fillets': '🐟',
     't_shirts': '👕',
     'tea': '🍃',

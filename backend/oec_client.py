@@ -87,6 +87,8 @@ class OECClient:
       "178712": OECProduct("178712", "Bicycles", "transportation"),
       "20803": OECProduct("20803", "Bananas", "agriculture"),
       "63102": OECProduct("63102", "Nitrogenous Fertilizers", "agriculture"),
+      "10304": OECProduct("10304", "Fish Fillets", "agriculture"),
+      "21005": OECProduct("21005", "Corn", "agriculture"),
   }
 
   def __init__(self):
