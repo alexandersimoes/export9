@@ -69,7 +69,8 @@ export function getFlagEmoji(countryCode: string): string {
     'FR': '🇫🇷', 'KR': '🇰🇷', 'IT': '🇮🇹', 'CA': '🇨🇦', 'ES': '🇪🇸',
     'IN': '🇮🇳', 'NL': '🇳🇱', 'SA': '🇸🇦', 'CH': '🇨🇭', 'AU': '🇦🇺',
     'IE': '🇮🇪', 'MX': '🇲🇽', 'RU': '🇷🇺', 'TH': '🇹🇭', 'MY': '🇲🇾',
-    'BR': '🇧🇷', 'CL': '🇨🇱'
+    'BR': '🇧🇷', 'CL': '🇨🇱', 'ZA': '🇿🇦', 'SL': '🇸🇱', 'NG': '🇳🇬',
+    'ID': '🇮🇩', 'EC': '🇪🇨'
   }
   return flags[countryCode] || '🏳️'
 }
@@ -133,7 +134,17 @@ export function getProductEmoji(productId: string): string {
     'auto_parts': '🔧',
     'drones': '🚁',
     'corn': '🌽',
-    'cherries': '🍒'
+    'cherries': '🍒',
+    'diamonds': '💎',
+    'copper_ore': '🪨',
+    'cocoa_beans': '🍫',
+    'fish_fillets': '🐟',
+    't_shirts': '👕',
+    'tea': '🍃',
+    'leather_footwear': '👞',
+    'bicycles': '🚲',
+    'bananas': '🍌',
+    'nitrogenous_fertilizers': '🌾'
   }
   return productEmojis[productId] || '📦'
 }

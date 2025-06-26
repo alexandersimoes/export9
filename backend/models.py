@@ -146,7 +146,12 @@ class GameManager:
         ("TH", "Thailand", "astha"),
         ("MY", "Malaysia", "asmys"),
         ("BR", "Brazil", "sabra"),
-        ("CL", "Chile", "sachl")
+        ("CL", "Chile", "sachl"),
+        ("ZA", "South Africa", "afzaf"),
+        ("SL", "Sierra Leone", "afsle"),
+        ("NG", "Nigeria", "afnga"),
+        ("ID", "Indonesia", "asidn"),
+        ("EC", "Ecuador", "saecu"),
     ]
     self.countries = [Country(code=code, name=name, oec_id=oec_id)
                       for code, name, oec_id in countries_data]
@@ -173,7 +178,17 @@ class GameManager:
         ("auto_parts", "Motor Vehicle Parts", "automotive", "178708"),
         ("drones", "Drones", "electronics", "178806"),
         ("corn", "Corn", "agriculture", "21005"),
-        ("cherries", "Cherries", "agriculture", "2080920")
+        ("cherries", "Cherries", "agriculture", "2080920"),
+        ("diamonds", "Diamonds", "mining", "147102"),
+        ("copper_ore", "Copper Ore", "mining", "52603"),
+        ("cocoa_beans", "Cocoa Beans", "agriculture", "41801"),
+        ("fish_fillets", "Fish Fillets", "agriculture", "10304"),
+        ("t_shirts", "T-shirts", "clothing", "116109"),
+        ("tea", "Tea", "clothing", "20902"),
+        ("leather_footwear", "Leather Footwear", "clothing", "126403"),
+        ("bicycles", "Bicycles", "transportation", "178712"),
+        ("bananas", "Bananas", "agriculture", "20803"),
+        ("nitrogenous_fertilizers", "Nitrogenous Fertilizers", "agriculture", "63102"),
     ]
     self.products = [Product(id=id, name=name, category=category, oec_id=oec_id)
                      for id, name, category, oec_id in products_data]

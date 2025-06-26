@@ -169,7 +169,7 @@ export default function GameBoard({
 
 
   return (
-    <div className="poker-table p-4 flex justify-center min-h-[600px]">
+    <div className="poker-table p-4 flex justify-center min-h-[630px]">
       <div className="w-full max-w-[800px]">
       {/* Header */}
       <div className="mb-3 rounded-lg overflow-hidden">

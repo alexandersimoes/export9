@@ -164,13 +164,21 @@ npm test
 └── README.md
 ```
 
+## Adding new products
+
+1. Add product to _initialize_products in backend/models.py
+2. Add product to backend/oec_client.py
+3. Add emoji to productEmojis in frontend/lib/utils.ts
+4. Clear data cache - rm data/export_data.json
+
+## Adding new countries
+
+1. Add country to _initialize_countries in backend/models.py
+2. Add country to backend/oec_client.py
+3. Add flag emoji to getFlagEmoji in frontend/lib/utils.ts
+4. Clear data cache - rm data/export_data.json
+
 ## Future Enhancements
 
-- **Redis Integration**: For persistent game state and session management
-- **Database**: Store game history and player statistics  
-- **Authentication**: User accounts and profiles
 - **Tournaments**: Multi-game tournaments with brackets
-- **Real Export Data**: Integration with trade statistics APIs
 - **Mobile App**: React Native mobile client
-- **Spectator Mode**: Watch ongoing games
-- **Custom Game Modes**: Different rule variations

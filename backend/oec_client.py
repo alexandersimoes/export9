@@ -48,8 +48,13 @@ class OECClient:
       "astha": OECCountry("astha", "Thailand"),
       "asmys": OECCountry("asmys", "Malaysia"),
       "sabra": OECCountry("sabra", "Brazil"),
-      "sachl": OECCountry("sachl", "Chile")
-
+      "sachl": OECCountry("sachl", "Chile"),
+      "afzaf": OECCountry("afzaf", "South Africa"),
+      "afsle": OECCountry("afsle", "Sierra Leone"),
+      "afnga": OECCountry("afnga", "Nigeria"),
+      "afken": OECCountry("afken", "Kenya"),
+      "asidn": OECCountry("asidn", "Indonesia"),
+      "saecu": OECCountry("saecu", "Ecuador"),
   }
 
   # OEC product mappings
@@ -72,7 +77,16 @@ class OECClient:
       "42208": OECProduct("42208", "Hard Liquor", "beverages"),
       "42203": OECProduct("42203", "Beer", "beverages"),
       "178806": OECProduct("178806", "Drones", "electronics"),
-      "2080920": OECProduct("2080920", "Cherries", "agriculture")
+      "2080920": OECProduct("2080920", "Cherries", "agriculture"),
+      "147102": OECProduct("147102", "Diamonds", "mining"),
+      "52603": OECProduct("52603", "Copper Ore", "mining"),
+      "41801": OECProduct("41801", "Cocoa Beans", "agriculture"),
+      "116109": OECProduct("116109", "T-shirts", "clothing"),
+      "20902": OECProduct("20902", "Tea", "clothing"),
+      "126403": OECProduct("126403", "Leather Footwear", "clothing"),
+      "178712": OECProduct("178712", "Bicycles", "transportation"),
+      "20803": OECProduct("20803", "Bananas", "agriculture"),
+      "63102": OECProduct("63102", "Nitrogenous Fertilizers", "agriculture"),
   }
 
   def __init__(self):
