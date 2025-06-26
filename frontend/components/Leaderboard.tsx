@@ -52,10 +52,10 @@ export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
   if (!isOpen) return null
 
   return (
-    <div className="inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-poker-light-bg rounded-lg p-6 max-w-2xl w-full mx-2 md:mx-4 max-h-[90vh] overflow-y-auto border-2 border-poker-strong-bg">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-poker-dark-text">ELO Leaderboard</h2>
+    <div className="inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
+      <div className="bg-poker-light-bg rounded-lg p-3 sm:p-6 max-w-2xl w-full mx-1 sm:mx-2 md:mx-4 max-h-[90vh] overflow-y-auto border-2 border-poker-strong-bg">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-poker-dark-text">ELO Leaderboard</h2>
           <button
             onClick={onClose}
             className="text-poker-dark-text opacity-60 hover:opacity-80 text-2xl"
@@ -86,7 +86,7 @@ export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
         )}
 
         {!loading && !error && leaderboard.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {leaderboard.map((player, index) => {
               const eloCategory = getEloCategory(player.elo_rating)
               const eloColor = getEloColor(player.elo_rating)
@@ -94,39 +94,39 @@ export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
               return (
                 <div
                   key={index}
-                  className="bg-white rounded-lg p-4 border-2 border-poker-strong-bg border-opacity-20 hover:border-opacity-40 transition-all"
+                  className="bg-white rounded-lg p-2 sm:p-4 border-2 border-poker-strong-bg border-opacity-20 hover:border-opacity-40 transition-all"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="text-2xl font-bold text-poker-strong-bg">
+                    <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
+                      <div className="text-lg sm:text-2xl font-bold text-poker-strong-bg flex-shrink-0">
                         #{index + 1}
                       </div>
                       <div 
-                        className="w-4 h-4 rounded-full"
+                        className="w-3 h-3 sm:w-4 sm:h-4 rounded-full flex-shrink-0"
                         style={{ backgroundColor: eloColor }}
                       />
-                      <div>
-                        <div className="font-bold text-poker-dark-text">
+                      <div className="min-w-0">
+                        <div className="font-bold text-poker-dark-text text-sm sm:text-base truncate">
                           {player.display_name}
                         </div>
-                        <div className="text-sm text-poker-dark-text opacity-60">
+                        <div className="text-xs sm:text-sm text-poker-dark-text opacity-60">
                           {eloCategory}
                         </div>
                       </div>
                     </div>
                     
-                    <div className="text-right">
-                      <div className="text-xl font-bold text-poker-strong-bg">
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-lg sm:text-xl font-bold text-poker-strong-bg">
                         {player.elo_rating}
                       </div>
                       <div className="text-xs text-poker-dark-text opacity-60">
-                        ELO Rating
+                        ELO
                       </div>
                     </div>
                   </div>
                   
-                  <div className="mt-3 pt-3 border-t border-poker-strong-bg border-opacity-10">
-                    <div className="grid grid-cols-4 gap-4 text-center text-sm">
+                  <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-poker-strong-bg border-opacity-10">
+                    <div className="grid grid-cols-4 gap-1 sm:gap-4 text-center text-xs sm:text-sm">
                       <div>
                         <div className="font-bold text-poker-dark-text">
                           {player.games_played}
@@ -156,7 +156,7 @@ export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
                           {player.win_rate}%
                         </div>
                         <div className="text-xs text-poker-dark-text opacity-60">
-                          Win Rate
+                          Rate
                         </div>
                       </div>
                     </div>

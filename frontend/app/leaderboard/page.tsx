@@ -45,7 +45,7 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="poker-table flex items-center justify-center p-4">
+    <div className="poker-table flex items-center justify-center p-2 md:p-4">
       <div className="card w-full max-w-4xl mx-4">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 space-y-4 sm:space-y-0">
           <div className="text-center sm:text-left">
@@ -111,16 +111,16 @@ export default function LeaderboardPage() {
                 return (
                   <div
                     key={index}
-                    className={`rounded-lg p-6 border-2 transition-all hover:shadow-lg ${
+                    className={`rounded-lg p-4 md:p-6 border-2 transition-all hover:shadow-lg ${
                       isTopThree 
                         ? 'bg-gradient-to-r from-poker-light-bg via-white to-poker-light-bg border-poker-accent shadow-lg' 
                         : 'bg-white border-poker-strong-bg border-opacity-30 hover:border-opacity-50 hover:bg-poker-light-bg hover:bg-opacity-30'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-6">
+                      <div className="flex items-center space-x-4 md:space-x-6">
                         <div className="text-center">
-                          <div className={`text-3xl font-bold ${
+                          <div className={`text-xl md:text-3xl font-bold ${
                             isTopThree ? 'text-poker-strong-bg' : 'text-poker-dark-text opacity-70'
                           }`}>
                             #{index + 1}
@@ -130,23 +130,18 @@ export default function LeaderboardPage() {
                           {index === 2 && <div className="text-2xl">🥉</div>}
                         </div>
                         
-                        <div 
-                          className="w-6 h-6 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: eloColor }}
-                        />
-                        
                         <div className="min-w-0 flex-1">
-                          <div className="text-xl font-bold text-poker-dark-text truncate">
+                          <div className="text-lg md:text-xl font-bold text-poker-dark-text truncate">
                             {player.display_name}
                           </div>
                           <div className="text-sm text-poker-dark-text opacity-60">
-                            {eloCategory} Player
+                            <span className="w-3 h-3 rounded-full flex-shrink-0 inline-block mr-1" style={{ backgroundColor: eloColor }} /> {eloCategory}
                           </div>
                         </div>
                       </div>
                       
                       <div className="text-right flex-shrink-0">
-                        <div className="text-2xl font-bold text-poker-strong-bg">
+                        <div className="text-xl md:text-2xl font-bold text-poker-strong-bg">
                           {player.elo_rating}
                         </div>
                         <div className="text-sm text-poker-dark-text opacity-60">
