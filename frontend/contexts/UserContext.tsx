@@ -164,8 +164,11 @@ export function UserProvider({ children }: UserProviderProps) {
             const elo = session.history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].submission.newElo;
             const gamesPlayed = session.history.length;
             const wins = session.history.filter(h => h.won).length;
-            const losses = session.history.filter(h => !h.won).length;
-            const draws = 0;
+            const draws = session.history.filter(h => 
+              !h.won && 
+              (h?.answer?.playerScore ?? 0) === (h?.answer?.opponentScore ?? 0)
+            ).length;
+            const losses = session.history.filter(h => !h.won).length - draws;
             const eloCategory = elo < 1200 ? 'Beginner' : elo < 1400 ? 'Intermediate' : elo < 1600 ? 'Advanced' : 'Expert';
             
             setUser({
