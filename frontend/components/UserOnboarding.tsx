@@ -92,7 +92,7 @@ export default function UserOnboarding({ onComplete }: UserOnboardingProps) {
   }
 
   return (
-    <div className="inset-0 flex items-center justify-center z-50">
+    <div className="inset-0 flex items-center justify-center z-50 min-h-[600px]">
       <div className="rounded-lg p-8 max-w-md w-full mx-4 border-2" style={{ backgroundColor: '#fbe4c7', borderColor: '#891710' }}>
         <div className="text-center mb-6">
           {/* Logo */}
