@@ -92,7 +92,7 @@ export default function WaitingRoom({ playerName, status, onPlayCPU }: WaitingRo
           )}
 
           {/* How to Play Instructions */}
-          <div className="mt-8">
+          <div className="mt-4 md:mt-8">
             <HowToPlayInstructions />
           </div>
         </div>

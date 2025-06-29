@@ -7,6 +7,7 @@ import RoundResultModal from './RoundResultModal'
 import { getFlagEmoji, getProductEmoji } from '@/lib/utils'
 import { useUser } from '@/contexts/UserContext'
 import { getUserCountryCode } from '@/lib/geolocation'
+import { getEloColor } from '@/lib/guestElo'
 import UserProfile from './UserProfile'
 
 interface GameBoardProps {
@@ -32,6 +33,7 @@ export default function GameBoard({
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [showQuitDialog, setShowQuitDialog] = useState(false)
   const router = useRouter()
+  const { user } = useUser()
 
   const handleLogoClick = () => {
     setShowQuitDialog(true)
@@ -169,12 +171,12 @@ export default function GameBoard({
 
 
   return (
-    <div className="poker-table p-4 flex justify-center min-h-[630px]">
+    <div className="poker-table p-2 md:p-4 flex justify-center min-h-[630px]">
       <div className="w-full max-w-[800px]">
       {/* Header */}
-      <div className="mb-3 rounded-lg overflow-hidden">
+      <div className="mb-0 md:mb-3 rounded-lg overflow-hidden">
         {/* Mobile Layout */}
-        <div className="sm:hidden flex items-center justify-between px-2 py-1">
+        <div className="sm:hidden flex items-center justify-between px-2 py-0">
           <div className="text-sm font-semibold" style={{ color: '#fbe4c7', textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
             {gameState.current_round}/{gameState.total_rounds}
           </div>
@@ -242,35 +244,104 @@ export default function GameBoard({
         backgroundColor: 'rgba(251, 228, 199, 0.3)', 
         border: '1px solid rgba(212, 184, 150, 0.5)' 
       }}>
-        <div className="flex items-center justify-center gap-2 sm:gap-6 px-2">
+        <div className="flex items-center justify-between px-2">
           {(() => {
-            // Always show current player first, then opponent
             const currentPlayer = gameState.players.find(p => p.name === playerName)
             const opponent = gameState.players.find(p => p.name !== playerName)
-            const orderedPlayers = currentPlayer && opponent ? [currentPlayer, opponent] : gameState.players
             
-            return orderedPlayers.map((player, index) => (
-              <div key={player.id} className="flex items-center gap-1 sm:gap-2 min-w-0">
-                <div className="flex-shrink-0">
-                {getPlayerFlag(player)}
+            if (!currentPlayer || !opponent) {
+              // Fallback for edge cases
+              return gameState.players.map((player, index) => (
+                <div key={player.id} className="flex items-center gap-1 sm:gap-2 min-w-0">
+                  <div className="flex-shrink-0">
+                    {getPlayerFlag(player)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-xs sm:text-sm truncate" style={{ color: 'var(--poker-dark-text)' }}>
+                      {player.name}
+                      {player.name === playerName && <span className="ml-1 opacity-75">(You)</span>}
+                    </div>
+                    {player.name === playerName && user && (
+                    <div 
+                      className="w-3 h-3 sm:w-4 sm:h-4 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: getEloColor(user.elo_rating) }}
+                    >{user.elo_rating}</div>
+                  )}
+                  </div>
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm flex-shrink-0" style={{ 
+                    backgroundColor: 'var(--poker-accent)', 
+                    color: 'var(--poker-dark-text)',
+                    border: '2px solid #e6a82e',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                  }}>
+                    {player.score || 0}
+                  </div>
                 </div>
-                <span className="font-semibold text-xs sm:text-sm truncate max-w-[80px] sm:max-w-none" style={{ color: 'var(--poker-dark-text)' }}>
-                  {player.name}
-                  {player.name === playerName && <span className="ml-1 opacity-75">(You)</span>}
-                </span>
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm flex-shrink-0" style={{ 
-                  backgroundColor: 'var(--poker-accent)', 
-                  color: 'var(--poker-dark-text)',
-                  border: '2px solid #e6a82e',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-                }}>
-                  {player.score || 0}
+              ))
+            }
+            
+            return (
+              <>
+                {/* Current Player - Left Side */}
+                <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                  <div className="flex-shrink-0">
+                    {getPlayerFlag(currentPlayer)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-xs sm:text-sm truncate" style={{ color: 'var(--poker-dark-text)' }}>
+                      {currentPlayer.name} <span className="opacity-75">(You)</span>
+                    </div>
+                    {user && (
+                      <div className="text-xs opacity-75" style={{ color: 'var(--poker-dark-text)' }}>
+                        <span 
+                          className="w-2 h-2 rounded-full flex-shrink-0 inline-block"
+                          style={{ backgroundColor: getEloColor(user.elo_rating) }}
+                        /> {user.elo_rating}
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm flex-shrink-0" style={{ 
+                    backgroundColor: 'var(--poker-accent)', 
+                    color: 'var(--poker-dark-text)',
+                    border: '2px solid #e6a82e',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                  }}>
+                    {currentPlayer.score || 0}
+                  </div>
                 </div>
-                {index === 0 && (
-                  <span className="text-xs sm:text-sm font-medium mx-1 sm:mx-2 flex-shrink-0" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>vs</span>
-                )}
-              </div>
-            ))
+                
+                {/* VS indicator */}
+                <span className="text-xs sm:text-sm font-medium flex-shrink-0" style={{ color: 'var(--poker-dark-text)', opacity: 0.6 }}>vs</span>
+                
+                {/* Opponent - Right Side */}
+                <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-row-reverse">
+                  <div className="flex-shrink-0">
+                    {getPlayerFlag(opponent)}
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <div className="font-semibold text-xs sm:text-sm truncate" style={{ color: 'var(--poker-dark-text)' }}>
+                      {opponent.name}
+                    </div>
+                    {opponent.elo_rating && (
+                      <div className="text-xs opacity-75 flex items-center justify-end gap-1" style={{ color: 'var(--poker-dark-text)' }}>
+                        <span className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: getEloColor(opponent.elo_rating) }}
+                        />
+                        {opponent.elo_rating}
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm flex-shrink-0" style={{ 
+                    backgroundColor: 'var(--poker-accent)', 
+                    color: 'var(--poker-dark-text)',
+                    border: '2px solid #e6a82e',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                  }}>
+                    {opponent.score || 0}
+                  </div>
+                </div>
+              </>
+            )
           })()}
         </div>
       </div>

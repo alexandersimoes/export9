@@ -85,6 +85,7 @@ export function useSocket(): UseSocketReturn {
         current_round: data.round_number,
         total_rounds: data.total_rounds,
         current_product: data.product,
+        players: data.players || prevState.players, // Update with latest player data including ELO
         your_cards: data.your_cards || prevState.your_cards, // Update with remaining cards
         lastRoundResult: undefined // Clear previous round result
       } : null)

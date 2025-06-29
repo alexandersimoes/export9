@@ -63,6 +63,7 @@ class Player:
   score: int = 0
   current_card: Optional[Card] = None
   is_cpu: bool = False
+  elo_rating: Optional[int] = None
 
   def __post_init__(self):
     if not self.cards:
@@ -269,7 +270,8 @@ class GameManager:
         name="CPU",
         socket_id="",  # CPU doesn't need socket
         state=PlayerState.CPU,
-        is_cpu=True
+        is_cpu=True,
+        elo_rating=1200  # Fixed ELO for CPU
     )
     game.add_player(cpu_player)
     self.player_game_map[cpu_player.id] = game.id

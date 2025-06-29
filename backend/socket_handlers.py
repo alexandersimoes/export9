@@ -4,6 +4,7 @@ from typing import Dict, Any
 import socketio
 
 from models import GameManager, Player, PlayerState, GameState
+from database import db
 
 logger = logging.getLogger(__name__)
 
@@ -72,12 +73,23 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
               await sio.emit('error', {'message': 'You are already in a game'}, room=sid)
               return
 
+      # Fetch user's ELO rating if user_id is provided
+      elo_rating = None
+      if user_id:
+        try:
+          user = db.get_user_by_id(user_id)
+          if user:
+            elo_rating = user.elo_rating
+        except Exception as e:
+          logger.warning(f"Failed to fetch ELO for user {user_id}: {e}")
+
       # Create new player
       player = Player(
           id=str(uuid.uuid4()),
           name=player_name,
           socket_id=sid,
-          state=PlayerState.WAITING
+          state=PlayerState.WAITING,
+          elo_rating=elo_rating
       )
 
       # Add user_id to player object if provided
@@ -115,7 +127,7 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
         for game_player in game.players:
           await sio.emit('game_found', {
               'game_id': game.id,
-              'players': [{'id': p.id, 'name': p.name} for p in game.players],
+              'players': [{'id': p.id, 'name': p.name, 'elo_rating': p.elo_rating} for p in game.players],
               'your_cards': [{'country_code': c.country.code, 'country_name': c.country.name}
                              for c in game_player.cards]
           }, room=game_player.socket_id)
@@ -155,7 +167,7 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
       # Send game_found event to human player
       await sio.emit('game_found', {
           'game_id': game.id,
-          'players': [{'id': p.id, 'name': p.name, 'is_cpu': p.is_cpu} for p in game.players],
+          'players': [{'id': p.id, 'name': p.name, 'is_cpu': p.is_cpu, 'elo_rating': p.elo_rating} for p in game.players],
           'your_cards': [{'country_code': c.country.code, 'country_name': c.country.name}
                          for c in player.cards]
       }, room=player.socket_id)
@@ -276,7 +288,9 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
               'id': p.id,
               'name': p.name,
               'score': p.score,
-              'cards_remaining': len([c for c in p.cards if not c.is_played])
+              'cards_remaining': len([c for c in p.cards if not c.is_played]),
+              'elo_rating': p.elo_rating,
+              'is_cpu': p.is_cpu
           } for p in game.players],
           'your_cards': [{'country_code': c.country.code, 'country_name': c.country.name}
                          for c in player.cards if not c.is_played]
@@ -312,6 +326,14 @@ async def start_round(sio: socketio.AsyncServer, game_manager: GameManager, game
               'name': current_round.product.name,
               'category': current_round.product.category
           },
+          'players': [{
+              'id': p.id,
+              'name': p.name,
+              'score': p.score,
+              'cards_remaining': len([c for c in p.cards if not c.is_played]),
+              'elo_rating': p.elo_rating,
+              'is_cpu': p.is_cpu
+          } for p in game.players],
           'your_cards': [{'country_code': c.country.code, 'country_name': c.country.name}
                          for c in available_cards]
       }, room=player.socket_id)
@@ -434,6 +456,8 @@ async def resolve_round(sio: socketio.AsyncServer, game_manager: GameManager, ga
           'name': p.name,
           'score': p.score,
           'is_round_winner': p.id in winner_player_ids,
+          'elo_rating': p.elo_rating,
+          'is_cpu': p.is_cpu,
           'card_played': {
               'country_code': current_round.player_cards[p.id].country.code,
               'country_name': current_round.player_cards[p.id].country.name,
@@ -473,7 +497,9 @@ async def end_game(sio: socketio.AsyncServer, game_manager: GameManager, game_id
       'final_scores': [{
           'id': p.id,
           'name': p.name,
-          'score': p.score
+          'score': p.score,
+          'elo_rating': p.elo_rating,
+          'is_cpu': p.is_cpu
       } for p in game.players]
   }, room=f"game_{game_id}")
 

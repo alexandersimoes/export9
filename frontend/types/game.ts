@@ -20,6 +20,7 @@ export interface Player {
   score: number;
   cards_remaining?: number;
   is_cpu?: boolean;
+  elo_rating?: number;
 }
 
 export interface GameState {
