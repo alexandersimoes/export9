@@ -492,7 +492,7 @@ export default function GameBoard({
 
       {/* Quit Game Confirmation Modal */}
       {showQuitDialog && (
-        <div className="inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="card w-full max-w-sm sm:max-w-md">
             <div className="text-center">
               <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">⚠️</div>

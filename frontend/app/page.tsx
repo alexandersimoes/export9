@@ -6,12 +6,14 @@ import { Suspense } from 'react'
 import { useUser } from '@/contexts/UserContext'
 import UserOnboarding from '@/components/UserOnboarding'
 import UserProfile from '@/components/UserProfile'
+import PrivateRoomModal from '@/components/PrivateRoomModal'
 import { initFrameAndPoll } from "@newswire/frames";
 
 function HomeContent() {
   const searchParams = useSearchParams()
   const { user, isLoading, refreshUser } = useUser()
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showPrivateRoomModal, setShowPrivateRoomModal] = useState(false)
   const router = useRouter()
 
   // Show onboarding if no user
@@ -28,6 +30,11 @@ function HomeContent() {
     if (user) {
       router.push('/game')
     }
+  }
+
+  const handleJoinPrivateRoom = (roomCode: string) => {
+    setShowPrivateRoomModal(false)
+    router.push(`/room/${roomCode}`)
   }
 
   const handleOnboardingComplete = () => {
@@ -84,8 +91,17 @@ function HomeContent() {
               disabled={!user}
               className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {user ? 'Find Match' : 'Loading...'}
+              {user ? '🎯 Find Random Match' : 'Loading...'}
             </button>
+            
+            {user && (
+              <button
+                onClick={() => setShowPrivateRoomModal(true)}
+                className="w-full bg-poker-accent text-poker-dark-text font-semibold py-3 px-3 rounded-lg hover:opacity-90 transition-opacity"
+              >
+                🔒 Create Private Room
+              </button>
+            )}
             
             {user && (
               <div className="grid grid-cols-2 gap-3">
@@ -116,6 +132,12 @@ function HomeContent() {
         </div>
         </div>
       )}
+      
+      <PrivateRoomModal
+        isOpen={showPrivateRoomModal}
+        onClose={() => setShowPrivateRoomModal(false)}
+        onJoinRoom={handleJoinPrivateRoom}
+      />
     </>
   )
 }

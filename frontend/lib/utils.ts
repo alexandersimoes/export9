@@ -9,12 +9,16 @@
  * Values < $1M show as thousands (e.g., "$500k")
  */
 export function formatExportValue(value: number): string {
-  if (value >= 1) {
+  if (value === 0) {
+    return '0'
+  } else if (value >= 1) {
     return `$${value.toFixed(1)}B`
   } else if (value >= 0.001) {
     return `$${(value * 1000).toFixed(0)}M`
-  } else {
+  } else if (value >= 0.000001) {
     return `$${(value * 1000000).toFixed(0)}k`
+  } else {
+    return `$${(value * 1000000).toFixed(0)}`
   }
 }
 
@@ -32,18 +36,24 @@ export function formatExportValueWithPrecision(values: number[]): string[] {
   // Try increasing precision until all values are unique or we hit max precision
   while (precision <= 3) {
     formatted = values.map(value => {
-      if (value >= 1) {
+      if (value === 0) {
+        return '0'
+      } else if (value >= 1) {
         return `$${value.toFixed(precision)}B`
       } else if (value >= 0.001) {
         // For millions, use appropriate precision
         const millionValue = value * 1000
         const millionPrecision = precision === 1 ? 0 : precision - 1
         return `$${millionValue.toFixed(millionPrecision)}M`
-      } else {
+      } else if (value >= 0.000001) {
         // For thousands, use appropriate precision
         const thousandValue = value * 1000000
         const thousandPrecision = precision === 1 ? 0 : precision - 1
         return `$${thousandValue.toFixed(thousandPrecision)}k`
+      } else {
+        // For very small values, show as dollars
+        const dollarValue = value * 1000000
+        return `$${dollarValue.toFixed(0)}`
       }
     })
     

@@ -15,7 +15,7 @@ from datetime import datetime
 from models import GameManager
 from socket_handlers import register_socket_handlers
 from data_manager import export_data_manager, update_scheduler
-from database import db, User, GameRecord, coerce_user_id
+from database import db, User, GameRecord, PrivateRoom, coerce_user_id
 from elo_system import EloCalculator
 from guest_names import generate_guest_username, generate_guest_display_name
 
@@ -92,6 +92,27 @@ class GameResultRequest(BaseModel):
   player1_score: int
   player2_score: int
   game_duration: Optional[int] = None
+
+
+class CreatePrivateRoomRequest(BaseModel):
+  creator_id: str
+
+
+class PrivateRoomResponse(BaseModel):
+  id: str
+  creator_id: str
+  room_code: str
+  is_active: bool
+  current_players: int
+  max_players: int
+  share_url: str
+  created_at: str
+  expires_at: str
+
+
+class JoinPrivateRoomRequest(BaseModel):
+  room_code: str
+  user_id: str
 
 
 # Security for OEC authentication
@@ -427,6 +448,113 @@ async def find_opponent(user_id: str):
   except Exception as e:
     logger.error(f"Matchmaking failed: {e}")
     raise HTTPException(status_code=500, detail="Matchmaking failed")
+
+
+@app.post("/api/private-rooms", response_model=PrivateRoomResponse)
+async def create_private_room(request: CreatePrivateRoomRequest):
+  """Create a new private room"""
+  try:
+    # Verify user exists
+    user = db.get_user_by_id(request.creator_id)
+    if not user:
+      raise HTTPException(status_code=404, detail="User not found")
+
+    # Check if user already has an active private room
+    existing_rooms = db.get_private_rooms_by_creator(request.creator_id)
+    if existing_rooms:
+      # Return the existing room instead of creating a new one
+      room = existing_rooms[0]
+    else:
+      # Create new room if none exists
+      room = db.create_private_room(request.creator_id)
+    
+    # Build share URL
+    base_url = "https://export9.oec.world" if os.getenv("NODE_ENV") == "production" else "http://localhost:3000"
+    share_url = f"{base_url}/room/{room.room_code}"
+    
+    return PrivateRoomResponse(
+        id=room.id,
+        creator_id=room.creator_id,
+        room_code=room.room_code,
+        is_active=room.is_active,
+        current_players=room.current_players,
+        max_players=room.max_players,
+        share_url=share_url,
+        created_at=room.created_at.isoformat() if room.created_at else "",
+        expires_at=room.expires_at.isoformat() if room.expires_at else ""
+    )
+    
+  except HTTPException:
+    raise
+  except Exception as e:
+    logger.error(f"Failed to create private room: {e}")
+    raise HTTPException(status_code=500, detail="Failed to create private room")
+
+
+@app.get("/api/private-rooms/{room_code}", response_model=PrivateRoomResponse)
+async def get_private_room(room_code: str):
+  """Get private room by room code"""
+  try:
+    room = db.get_private_room_by_code(room_code)
+    if not room:
+      raise HTTPException(status_code=404, detail="Room not found or expired")
+    
+    # Build share URL
+    base_url = "https://export9.oec.world" if os.getenv("NODE_ENV") == "production" else "http://localhost:3000"
+    share_url = f"{base_url}/room/{room.room_code}"
+    
+    return PrivateRoomResponse(
+        id=room.id,
+        creator_id=room.creator_id,
+        room_code=room.room_code,
+        is_active=room.is_active,
+        current_players=room.current_players,
+        max_players=room.max_players,
+        share_url=share_url,
+        created_at=room.created_at.isoformat() if room.created_at else "",
+        expires_at=room.expires_at.isoformat() if room.expires_at else ""
+    )
+    
+  except HTTPException:
+    raise
+  except Exception as e:
+    logger.error(f"Failed to get private room: {e}")
+    raise HTTPException(status_code=500, detail="Failed to get private room")
+
+
+@app.get("/api/users/{user_id}/private-rooms", response_model=List[PrivateRoomResponse])
+async def get_user_private_rooms(user_id: str):
+  """Get all active private rooms created by a user"""
+  try:
+    user = db.get_user_by_id(user_id)
+    if not user:
+      raise HTTPException(status_code=404, detail="User not found")
+    
+    rooms = db.get_private_rooms_by_creator(user_id)
+    
+    # Build share URLs
+    base_url = "https://export9.oec.world" if os.getenv("NODE_ENV") == "production" else "http://localhost:3000"
+    
+    return [
+        PrivateRoomResponse(
+            id=room.id,
+            creator_id=room.creator_id,
+            room_code=room.room_code,
+            is_active=room.is_active,
+            current_players=room.current_players,
+            max_players=room.max_players,
+            share_url=f"{base_url}/room/{room.room_code}",
+            created_at=room.created_at.isoformat() if room.created_at else "",
+            expires_at=room.expires_at.isoformat() if room.expires_at else ""
+        )
+        for room in rooms
+    ]
+    
+  except HTTPException:
+    raise
+  except Exception as e:
+    logger.error(f"Failed to get user private rooms: {e}")
+    raise HTTPException(status_code=500, detail="Failed to get user private rooms")
 
 
 @app.get("/")

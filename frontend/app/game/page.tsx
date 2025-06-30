@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useSocket } from '@/lib/useSocket'
 import { useUser } from '@/contexts/UserContext'
 import GameBoard from '@/components/GameBoard'
@@ -11,6 +11,7 @@ import ErrorDisplay from '@/components/ErrorDisplay'
 
 function GamePageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isLoading } = useUser()
   
   const { gameState, gameStatus, error, joinGame, playCard, playCPU, quitGame, reconnect } = useSocket()
@@ -23,9 +24,15 @@ function GamePageContent() {
     }
     
     if (user && gameStatus === 'connecting') {
-      joinGame(user.display_name, `${user.id}`)
+      const roomCode = searchParams?.get('room') || localStorage.getItem('private_room_code') || ''
+      joinGame(user.display_name, `${user.id}`, roomCode)
+      
+      // Clear room code from localStorage after use
+      if (localStorage.getItem('private_room_code')) {
+        localStorage.removeItem('private_room_code')
+      }
     }
-  }, [user, isLoading, gameStatus, joinGame, router])
+  }, [user, isLoading, gameStatus, joinGame, router, searchParams])
 
   // Show error state
   if (error && gameStatus === 'error') {
@@ -38,7 +45,7 @@ function GamePageContent() {
   }
 
   // Show waiting room while looking for opponent
-  if (gameStatus === 'connecting' || gameStatus === 'waiting_for_opponent') {
+  if (gameStatus === 'connecting' || gameStatus === 'waiting_for_opponent' || gameStatus === 'waiting_for_friend') {
     return (
       <WaitingRoom 
         playerName={user?.display_name || ''}

@@ -46,9 +46,29 @@ class GameRecord:
   created_at: Optional[datetime] = None
 
 
+@dataclass
+class PrivateRoom:
+  id: Optional[str] = None
+  creator_id: str = ""
+  room_code: str = ""  # Short, shareable code
+  is_active: bool = True
+  max_players: int = 2
+  current_players: int = 0
+  created_at: Optional[datetime] = None
+  expires_at: Optional[datetime] = None
+
+
 def generate_user_id() -> str:
   """Generate a unique string ID for users"""
   return str(uuid.uuid4())
+
+
+def generate_room_code() -> str:
+  """Generate a short, shareable room code"""
+  import random
+  import string
+  # Generate a 6-character room code (letters and numbers)
+  return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 
 def coerce_user_id(user_id) -> str:
@@ -111,11 +131,29 @@ class Database:
                 )
             ''')
 
+      # Private rooms table
+      conn.execute('''
+                CREATE TABLE IF NOT EXISTS private_rooms (
+                    id TEXT PRIMARY KEY,
+                    creator_id TEXT NOT NULL,
+                    room_code TEXT UNIQUE NOT NULL,
+                    is_active BOOLEAN DEFAULT 1,
+                    max_players INTEGER DEFAULT 2,
+                    current_players INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TIMESTAMP,
+                    FOREIGN KEY (creator_id) REFERENCES users (id)
+                )
+            ''')
+
       # Indexes for performance
       conn.execute('CREATE INDEX IF NOT EXISTS idx_users_oec_id ON users(oec_user_id)')
       conn.execute('CREATE INDEX IF NOT EXISTS idx_users_elo ON users(elo_rating)')
       conn.execute('CREATE INDEX IF NOT EXISTS idx_users_last_played ON users(last_played)')
       conn.execute('CREATE INDEX IF NOT EXISTS idx_games_created ON game_records(created_at)')
+      conn.execute('CREATE INDEX IF NOT EXISTS idx_private_rooms_code ON private_rooms(room_code)')
+      conn.execute('CREATE INDEX IF NOT EXISTS idx_private_rooms_creator ON private_rooms(creator_id)')
+      conn.execute('CREATE INDEX IF NOT EXISTS idx_private_rooms_active ON private_rooms(is_active)')
 
       conn.commit()
     finally:
@@ -337,6 +375,113 @@ class Database:
             ''', (exclude_user_id_str,)).fetchone()
 
       return dict(row) if row else None
+    finally:
+      conn.close()
+
+  def create_private_room(self, creator_id: str) -> PrivateRoom:
+    """Create a new private room"""
+    conn = self.get_connection()
+    try:
+      room_id = str(uuid.uuid4())
+      room_code = generate_room_code()
+      created_at = datetime.now()
+      # Rooms expire after 24 hours
+      expires_at = datetime.now().replace(hour=23, minute=59, second=59, microsecond=999999)
+      
+      # Ensure unique room code
+      max_attempts = 10
+      for _ in range(max_attempts):
+        try:
+          conn.execute('''
+                        INSERT INTO private_rooms (id, creator_id, room_code, created_at, expires_at)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (room_id, creator_id, room_code, created_at.isoformat(), expires_at.isoformat()))
+          conn.commit()
+          break
+        except sqlite3.IntegrityError:
+          # Room code collision, try again
+          room_code = generate_room_code()
+      else:
+        raise Exception("Failed to generate unique room code")
+
+      return PrivateRoom(
+          id=room_id,
+          creator_id=creator_id,
+          room_code=room_code,
+          is_active=True,
+          created_at=created_at,
+          expires_at=expires_at
+      )
+    finally:
+      conn.close()
+
+  def get_private_room_by_code(self, room_code: str) -> Optional[PrivateRoom]:
+    """Get private room by room code"""
+    conn = self.get_connection()
+    try:
+      row = conn.execute('''
+                SELECT * FROM private_rooms 
+                WHERE room_code = ? AND is_active = 1 AND expires_at > datetime('now')
+            ''', (room_code.upper(),)).fetchone()
+      if row:
+        room_data = dict(row)
+        # Convert string dates back to datetime objects
+        if room_data['created_at']:
+          room_data['created_at'] = datetime.fromisoformat(room_data['created_at'])
+        if room_data['expires_at']:
+          room_data['expires_at'] = datetime.fromisoformat(room_data['expires_at'])
+        return PrivateRoom(**room_data)
+      return None
+    finally:
+      conn.close()
+
+  def get_private_rooms_by_creator(self, creator_id: str) -> List[PrivateRoom]:
+    """Get all active private rooms by creator"""
+    conn = self.get_connection()
+    try:
+      rows = conn.execute('''
+                SELECT * FROM private_rooms 
+                WHERE creator_id = ? AND is_active = 1 AND expires_at > datetime('now')
+                ORDER BY created_at DESC
+            ''', (creator_id,)).fetchall()
+      rooms = []
+      for row in rows:
+        room_data = dict(row)
+        # Convert string dates back to datetime objects
+        if room_data['created_at']:
+          room_data['created_at'] = datetime.fromisoformat(room_data['created_at'])
+        if room_data['expires_at']:
+          room_data['expires_at'] = datetime.fromisoformat(room_data['expires_at'])
+        rooms.append(PrivateRoom(**room_data))
+      return rooms
+    finally:
+      conn.close()
+
+  def update_room_player_count(self, room_code: str, player_count: int) -> bool:
+    """Update the current player count for a room"""
+    conn = self.get_connection()
+    try:
+      cursor = conn.execute('''
+                UPDATE private_rooms 
+                SET current_players = ? 
+                WHERE room_code = ? AND is_active = 1
+            ''', (player_count, room_code.upper()))
+      conn.commit()
+      return cursor.rowcount > 0
+    finally:
+      conn.close()
+
+  def deactivate_private_room(self, room_code: str) -> bool:
+    """Deactivate a private room"""
+    conn = self.get_connection()
+    try:
+      cursor = conn.execute('''
+                UPDATE private_rooms 
+                SET is_active = 0 
+                WHERE room_code = ?
+            ''', (room_code.upper(),))
+      conn.commit()
+      return cursor.rowcount > 0
     finally:
       conn.close()
 

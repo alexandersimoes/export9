@@ -56,6 +56,8 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
     try:
       player_name = data.get('name', '').strip()
       user_id = data.get('user_id')
+      room_code = data.get('room_code', '').strip().upper()  # Private room code
+      
       if not player_name:
         await sio.emit('error', {'message': 'Name is required'}, room=sid)
         return
@@ -92,11 +94,18 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
           elo_rating=elo_rating
       )
 
-      # Add user_id to player object if provided
+      # Add user_id and room_code to player object if provided
       if user_id:
         player.user_id = user_id
+      if room_code:
+        player.room_code = room_code
 
-      # Add to waiting queue
+      # Handle private room joining
+      if room_code:
+        await handle_private_room_join(sio, game_manager, player, room_code)
+        return
+
+      # Regular matchmaking - add to waiting queue
       game_manager.add_waiting_player(player)
 
       await sio.emit('player_created', {
@@ -514,3 +523,87 @@ async def end_game(sio: socketio.AsyncServer, game_manager: GameManager, game_id
     # Remove game
     del game_manager.games[game_id]
     logger.info(f"Cleaned up completed game {game_id}")
+
+
+async def handle_private_room_join(sio: socketio.AsyncServer, game_manager: GameManager, player: Player, room_code: str):
+  """Handle player joining a private room"""
+  try:
+    # Verify the private room exists and is active
+    room = db.get_private_room_by_code(room_code)
+    if not room:
+      await sio.emit('error', {'message': 'Room not found or expired'}, room=player.socket_id)
+      return
+
+    # Check if room is full
+    if room.current_players >= room.max_players:
+      await sio.emit('error', {'message': 'Room is full'}, room=player.socket_id)
+      return
+
+    # Check if there's already someone waiting in this room
+    waiting_in_room = [p for p in game_manager.waiting_players if getattr(p, 'room_code', None) == room_code]
+    
+    if waiting_in_room:
+      # Match with the waiting player
+      other_player = waiting_in_room[0]
+      game_manager.waiting_players.remove(other_player)
+      
+      # Create new game
+      game = game_manager.create_game()
+      
+      # Add both players to game
+      game.add_player(other_player)
+      game.add_player(player)
+      game_manager.player_game_map[other_player.id] = game.id
+      game_manager.player_game_map[player.id] = game.id
+      
+      # Deal cards to players
+      game_manager._deal_cards(game)
+      
+      # Update room player count
+      db.update_room_player_count(room_code, 2)
+      
+      # Join both players to game room
+      await sio.enter_room(other_player.socket_id, f"game_{game.id}")
+      await sio.enter_room(player.socket_id, f"game_{game.id}")
+      
+      logger.info(f"Private room game created with ID: {game.id} for room {room_code}")
+      
+      # Start the game
+      game_manager.start_game(game.id)
+      
+      # Send personalized game_found event to each player
+      for game_player in game.players:
+        await sio.emit('game_found', {
+            'game_id': game.id,
+            'players': [{'id': p.id, 'name': p.name, 'elo_rating': p.elo_rating} for p in game.players],
+            'your_cards': [{'country_code': c.country.code, 'country_name': c.country.name}
+                           for c in game_player.cards],
+            'room_code': room_code
+        }, room=game_player.socket_id)
+      
+      # Start first round
+      await start_round(sio, game_manager, game.id, 1)
+      
+      # Deactivate the room since it's now in use
+      db.deactivate_private_room(room_code)
+      
+    else:
+      # First player in the room - add to waiting queue
+      game_manager.add_waiting_player(player)
+      
+      # Update room player count
+      db.update_room_player_count(room_code, 1)
+      
+      await sio.emit('player_created', {
+          'player_id': player.id,
+          'name': player.name,
+          'status': 'waiting_for_friend',
+          'room_code': room_code,
+          'message': f'Waiting for your friend to join room {room_code}'
+      }, room=player.socket_id)
+      
+      logger.info(f"Player {player.name} waiting in private room {room_code}")
+      
+  except Exception as e:
+    logger.error(f"Error in private room join: {e}")
+    await sio.emit('error', {'message': 'Failed to join private room'}, room=player.socket_id)

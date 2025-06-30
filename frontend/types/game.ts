@@ -68,6 +68,7 @@ export interface GameEndResult {
 export type GameStatus = 
   | 'connecting'
   | 'waiting_for_opponent'
+  | 'waiting_for_friend'
   | 'game_found'
   | 'playing'
   | 'round_ended'

@@ -64,6 +64,7 @@ class Player:
   current_card: Optional[Card] = None
   is_cpu: bool = False
   elo_rating: Optional[int] = None
+  room_code: Optional[str] = None
 
   def __post_init__(self):
     if not self.cards:

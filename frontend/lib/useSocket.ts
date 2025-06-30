@@ -9,7 +9,7 @@ interface UseSocketReturn {
   gameState: GameState | null
   gameStatus: GameStatus
   error: string | null
-  joinGame: (playerName: string, userId?: string) => void
+  joinGame: (playerName: string, userId?: string, roomCode?: string) => void
   playCard: (countryCode: string) => void
   playCPU: () => void
   quitGame: () => void
@@ -57,7 +57,12 @@ export function useSocket(): UseSocketReturn {
 
     socket.on('player_created', (data) => {
       console.log('Player created:', data)
-      setGameStatus('waiting_for_opponent')
+      // Check if this is a private room
+      if (data.status === 'waiting_for_friend') {
+        setGameStatus('waiting_for_friend')
+      } else {
+        setGameStatus('waiting_for_opponent')
+      }
     })
 
     socket.on('game_found', (data) => {
@@ -151,9 +156,13 @@ export function useSocket(): UseSocketReturn {
     }
   }, [])
 
-  const joinGame = (playerName: string, userId?: string) => {
+  const joinGame = (playerName: string, userId?: string, roomCode?: string) => {
     if (socketRef.current) {
-      socketRef.current.emit('join_game', { name: playerName, user_id: userId })
+      const data: any = { name: playerName, user_id: userId }
+      if (roomCode) {
+        data.room_code = roomCode
+      }
+      socketRef.current.emit('join_game', data)
     }
   }
 

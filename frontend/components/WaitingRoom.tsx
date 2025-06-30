@@ -91,6 +91,19 @@ export default function WaitingRoom({ playerName, status, onPlayCPU }: WaitingRo
             </div>
           )}
 
+          {status === 'waiting_for_friend' && (
+            <div>
+              <p className="text-lg mb-2" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Waiting for your friend to join...</p>
+              
+              <div className="rounded-lg p-4 mb-4 border-2" style={{ backgroundColor: '#e8f4fd', borderColor: 'var(--poker-strong-bg)' }}>
+                <div className="text-4xl mb-2">🔗</div>
+                <p className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>
+                  Share the room link with your friend to start playing together!
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* How to Play Instructions */}
           <div className="mt-4 md:mt-8">
             <HowToPlayInstructions />
