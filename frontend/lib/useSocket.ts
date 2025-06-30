@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { GameState, GameStatus, RoundResult, GameEndResult, Player } from '@/types/game'
+import { playBellSound } from './utils'
 
 interface UseSocketReturn {
   socket: Socket | null
@@ -68,6 +69,9 @@ export function useSocket(): UseSocketReturn {
     socket.on('game_found', (data) => {
       console.log('Game found:', data)
       setGameStatus('game_found')
+      
+      // Play bell sound to notify user that opponent was found
+      playBellSound()
       
       // Initialize game state
       setGameState({

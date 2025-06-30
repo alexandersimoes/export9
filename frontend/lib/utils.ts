@@ -121,6 +121,43 @@ export function getCategoryEmoji(category: string): string {
 }
 
 /**
+ * Play a bell sound notification
+ */
+export function playBellSound(): void {
+  try {
+    // Create an audio context and play a bell sound using Web Audio API
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    
+    // Create a bell-like sound using oscillators
+    const oscillator1 = audioContext.createOscillator()
+    const oscillator2 = audioContext.createOscillator()
+    const gainNode = audioContext.createGain()
+    
+    // Bell frequencies
+    oscillator1.frequency.setValueAtTime(800, audioContext.currentTime)
+    oscillator2.frequency.setValueAtTime(1200, audioContext.currentTime)
+    
+    // Connect the oscillators
+    oscillator1.connect(gainNode)
+    oscillator2.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+    
+    // Set volume and envelope
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime)
+    gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01)
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.8)
+    
+    // Start and stop the sound
+    oscillator1.start(audioContext.currentTime)
+    oscillator2.start(audioContext.currentTime)
+    oscillator1.stop(audioContext.currentTime + 0.8)
+    oscillator2.stop(audioContext.currentTime + 0.8)
+  } catch (error) {
+    console.log('Could not play bell sound:', error)
+  }
+}
+
+/**
  * Get specific product emoji by product ID
  */
 export function getProductEmoji(productId: string): string {
