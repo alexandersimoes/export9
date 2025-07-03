@@ -16,6 +16,15 @@ function HomeContent() {
   const [showPrivateRoomModal, setShowPrivateRoomModal] = useState(false)
   const router = useRouter()
 
+  // Check for room query parameter and redirect
+  useEffect(() => {
+    const roomCode = searchParams.get('room')
+    if (roomCode) {
+      router.push(`/room/${roomCode}`)
+      return
+    }
+  }, [searchParams, router])
+
   // Show onboarding if no user
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -94,14 +103,14 @@ function HomeContent() {
               {user ? '🎯 Find Match' : 'Loading...'}
             </button>
             
-            {/* {user && (
+            {user && (
               <button
                 onClick={() => setShowPrivateRoomModal(true)}
                 className="w-full bg-poker-accent text-poker-dark-text font-semibold py-3 px-3 rounded-lg hover:opacity-90 transition-opacity"
               >
                 🔒 Create Private Room
               </button>
-            )} */}
+            )}
             
             {user && (
               <div className="grid grid-cols-2 gap-3">

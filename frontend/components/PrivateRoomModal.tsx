@@ -175,7 +175,7 @@ export default function PrivateRoomModal({ isOpen, onClose, onRoomCreated, onJoi
                         </div>
                         <div className="flex gap-2">
                           <button
-                            onClick={() => copyToClipboard(room.share_url, room.room_code)}
+                            onClick={() => copyToClipboard(`https://dev.oec.world/en/games/export-holdem/?room=${room.room_code}`, room.room_code)}
                             className="text-xs px-3 py-1 rounded hover:opacity-80 transition-opacity"
                             style={{ backgroundColor: 'var(--poker-accent)', color: 'var(--poker-dark-text)' }}
                           >
@@ -185,7 +185,7 @@ export default function PrivateRoomModal({ isOpen, onClose, onRoomCreated, onJoi
                       </div>
                       <div className="mt-3 pt-3 border-t border-opacity-10" style={{ borderColor: 'var(--poker-strong-bg)' }}>
                         <p className="text-sm opacity-70" style={{ color: 'var(--poker-dark-text)' }}>
-                          Share this link with your friends: <code className="bg-gray-100 px-1 rounded text-xs">{room.share_url}</code>
+                          Share this link with your friends: <code className="bg-gray-100 px-1 rounded text-xs">https://dev.oec.world/en/games/export-holdem/?room={room.room_code}</code>
                         </p>
                       </div>
                     </div>
