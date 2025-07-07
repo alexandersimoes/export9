@@ -84,6 +84,10 @@ class LeaderboardEntry(BaseModel):
   losses: int
   draws: int
   win_rate: float
+  external_elo: Optional[int] = None
+  external_old_elo: Optional[int] = None
+  external_last_game: Optional[str] = None
+  has_external_data: bool = False
 
 
 class GameResultRequest(BaseModel):
@@ -265,9 +269,9 @@ async def get_user(user_id: str):
 
 @app.get("/api/leaderboard", response_model=List[LeaderboardEntry])
 async def get_leaderboard(limit: int = 50):
-  """Get ELO leaderboard"""
+  """Get ELO leaderboard with external data"""
   try:
-    leaderboard = db.get_leaderboard(limit)
+    leaderboard = await db.get_enhanced_leaderboard(limit)
     return [LeaderboardEntry(**entry) for entry in leaderboard]
   except Exception as e:
     logger.error(f"Failed to get leaderboard: {e}")

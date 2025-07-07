@@ -9,6 +9,9 @@ from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
 import os
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'export9.db')
 
@@ -330,6 +333,58 @@ class Database:
       return [dict(row) for row in rows]
     finally:
       conn.close()
+
+  async def get_enhanced_leaderboard(self, limit: int = 50) -> List[Dict[str, Any]]:
+    """Get enhanced leaderboard with external API data"""
+    import aiohttp
+    import asyncio
+    
+    # Get local leaderboard data
+    local_data = self.get_leaderboard(limit)
+    
+    # Fetch external leaderboard data
+    external_data = []
+    try:
+      async with aiohttp.ClientSession() as session:
+        async with session.post(
+          'https://dev.oec.world/api/games/leaderboard',
+          json={"game": "export-holdem"},
+          timeout=aiohttp.ClientTimeout(total=10)
+        ) as response:
+          if response.status == 200:
+            result = await response.json()
+            if result.get('success') and result.get('results'):
+              external_data = result['results'] if isinstance(result['results'], list) else [result['results']]
+    except Exception as e:
+      logger.error(f"Failed to fetch external leaderboard: {e}")
+      # Continue with local data only if external API fails
+    
+    # Combine local and external data
+    enhanced_data = []
+    for entry in local_data:
+      enhanced_entry = entry.copy()
+      
+      # Look for matching external data by display name
+      external_match = None
+      for ext_entry in external_data:
+        if ext_entry.get('username') == entry['display_name']:
+          external_match = ext_entry
+          break
+      
+      if external_match:
+        enhanced_entry['external_elo'] = external_match.get('new_elo')
+        enhanced_entry['external_old_elo'] = external_match.get('old_elo')
+        enhanced_entry['external_last_game'] = external_match.get('date')
+        enhanced_entry['has_external_data'] = True
+      else:
+        enhanced_entry['external_elo'] = None
+        enhanced_entry['external_old_elo'] = None
+        enhanced_entry['external_last_game'] = None
+        enhanced_entry['has_external_data'] = False
+      
+      enhanced_data.append(enhanced_entry)
+    
+    return enhanced_data
 
   def find_matched_opponent(self, user_elo: int, exclude_user_id) -> Optional[Dict[str, Any]]:
     """Find opponent with closest ELO rating"""

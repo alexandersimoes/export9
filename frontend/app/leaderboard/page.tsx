@@ -12,6 +12,10 @@ interface LeaderboardEntry {
   losses: number
   draws: number
   win_rate: number
+  external_elo?: number
+  external_old_elo?: number
+  external_last_game?: string
+  has_external_data?: boolean
 }
 
 export default function LeaderboardPage() {
@@ -194,6 +198,39 @@ export default function LeaderboardPage() {
                         </div>
                       </div>
                     </div>
+                    
+                    {player.has_external_data && (
+                      <div className="mt-4 pt-4 border-t border-poker-strong-bg border-opacity-10">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-poker-dark-text opacity-60">
+                            🌐 External ELO Data
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            {player.external_old_elo && player.external_elo && (
+                              <div className="text-sm">
+                                <span className="text-poker-dark-text opacity-60">
+                                  {player.external_old_elo} → 
+                                </span>
+                                <span className={`font-semibold ml-1 ${
+                                  player.external_elo > player.external_old_elo 
+                                    ? 'text-green-600' 
+                                    : player.external_elo < player.external_old_elo 
+                                      ? 'text-red-600' 
+                                      : 'text-poker-dark-text'
+                                }`}>
+                                  {player.external_elo}
+                                </span>
+                              </div>
+                            )}
+                            {player.external_last_game && (
+                              <div className="text-xs text-poker-dark-text opacity-50">
+                                {new Date(player.external_last_game).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )
               })}
