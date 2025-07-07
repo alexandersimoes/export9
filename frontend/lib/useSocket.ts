@@ -56,6 +56,26 @@ export function useSocket(): UseSocketReturn {
       console.log('Server acknowledged connection:', data)
     })
 
+    // Send heartbeat every 5 seconds to maintain connection tracking
+    const heartbeatInterval = setInterval(() => {
+      if (socket.connected) {
+        socket.emit('heartbeat', { timestamp: Date.now() })
+        console.log('Heartbeat sent', Date.now())
+      }
+    }, 5000)
+
+    // Try to notify server when tab/window is being closed
+    const handleBeforeUnload = () => {
+      if (socket.connected) {
+        console.log('Tab closing, sending disconnect signal')
+        socket.emit('player_leaving', { reason: 'tab_closed' })
+        socket.disconnect()
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('pagehide', handleBeforeUnload)
+
     socket.on('player_created', (data) => {
       console.log('Player created:', data)
       // Check if this is a private room
@@ -140,6 +160,29 @@ export function useSocket(): UseSocketReturn {
       setError(`${data.player_name} disconnected from the game`)
     })
 
+    // Catch-all event handler for debugging
+    socket.onAny((eventName, ...args) => {
+      console.log(`📡 Socket event received: ${eventName}`, args)
+    })
+
+    socket.on('game_forfeited', (data) => {
+      console.log('🚨 GAME FORFEITED EVENT RECEIVED:', data)
+      setGameStatus('game_ended')
+      setError(null) // Clear any existing errors
+      
+      setGameState(prevState => {
+        console.log('Setting forfeit game state, previous state:', prevState)
+        return prevState ? {
+          ...prevState,
+          state: 'finished',
+          players: data.final_scores,
+          gameEndedEarly: true,
+          forfeitReason: data.reason,
+          forfeitingPlayerName: data.forfeiting_player_name
+        } : null
+      })
+    })
+
     socket.on('game_state', (data: GameState) => {
       console.log('Game state received:', data)
       setGameState(data)
@@ -156,6 +199,9 @@ export function useSocket(): UseSocketReturn {
 
     // Cleanup on unmount
     return () => {
+      clearInterval(heartbeatInterval)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('pagehide', handleBeforeUnload)
       socket.disconnect()
     }
   }, [])

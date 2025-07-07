@@ -1,5 +1,8 @@
 import logging
 import uuid
+import os
+import time
+import asyncio
 from typing import Dict, Any
 import socketio
 
@@ -8,13 +11,97 @@ from database import db
 
 logger = logging.getLogger(__name__)
 
+# Global task for timeout checking
+_timeout_check_task = None
+
+def stop_timeout_checking():
+  """Stop the timeout checking background task"""
+  global _timeout_check_task
+  if _timeout_check_task and not _timeout_check_task.done():
+    _timeout_check_task.cancel()
+    logger.info("Timeout checking task stopped")
+
+async def check_player_timeouts(sio: socketio.AsyncServer, game_manager: GameManager):
+  """Background task to check for player timeouts in active games"""
+  logger.info("Player timeout checking task started")
+  
+  while True:
+    try:
+      current_time = time.time()
+      timeout_threshold = 15  # Reduced to 15 seconds for faster detection
+      
+      games_to_check = list(game_manager.games.values())
+      active_games = [g for g in games_to_check if g.state == GameState.IN_PROGRESS]
+      
+      if active_games:
+        logger.debug(f"Checking {len(active_games)} active games for timeouts")
+      
+      for game in active_games:
+        game_has_human_players = any(not p.is_cpu for p in game.players)
+        if not game_has_human_players:
+          continue
+          
+        timed_out_players = []
+        active_players = []
+        
+        logger.debug(f"Checking game {game.id} with {len(game.players)} players")
+        
+        for player in game.players:
+          if not player.is_cpu and player.state != PlayerState.DISCONNECTED:
+            time_since_last_seen = current_time - player.last_seen
+            logger.debug(f"Player {player.name} last seen {time_since_last_seen:.1f}s ago (threshold: {timeout_threshold}s)")
+            
+            if time_since_last_seen > timeout_threshold:
+              logger.warning(f"Player {player.name} timed out in game {game.id} (last seen {time_since_last_seen:.1f}s ago)")
+              timed_out_players.append(player)
+            else:
+              active_players.append(player)
+        
+        # If a player timed out and there's still an active player, handle forfeit
+        if timed_out_players and active_players:
+          for timed_out_player in timed_out_players:
+            remaining_player = active_players[0]  # Take first active player
+            logger.warning(f"TIMEOUT FORFEIT: {timed_out_player.name} timed out, awarding win to {remaining_player.name}")
+            try:
+              await handle_game_forfeit(sio, game_manager, game.id, timed_out_player.id, remaining_player.id)
+            except Exception as forfeit_error:
+              logger.error(f"Error handling forfeit for game {game.id}: {forfeit_error}")
+            break  # Only handle one forfeit per game per check cycle
+      
+    except Exception as e:
+      logger.error(f"Error in timeout check loop: {e}")
+    
+    try:
+      # Check every 3 seconds for faster detection
+      await asyncio.sleep(3)
+    except asyncio.CancelledError:
+      logger.info("Timeout checking task cancelled")
+      break
+    except Exception as e:
+      logger.error(f"Error in timeout check sleep: {e}")
+      await asyncio.sleep(3)  # Fallback sleep
+
 
 def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManager):
   """Register all Socket.IO event handlers"""
 
+  async def ensure_timeout_task_running():
+    """Ensure the timeout checking task is running"""
+    global _timeout_check_task
+    if _timeout_check_task is None or _timeout_check_task.done():
+      try:
+        _timeout_check_task = asyncio.create_task(check_player_timeouts(sio, game_manager))
+        logger.info("Started player timeout checking task")
+      except Exception as e:
+        logger.error(f"Failed to start timeout checking task: {e}")
+
   @sio.event
   async def connect(sid, environ):
     logger.info(f"Client connected: {sid}")
+    
+    # Start timeout checking task when first client connects
+    await ensure_timeout_task_running()
+    
     await sio.emit('connected', {'status': 'connected'}, room=sid)
 
   @sio.event
@@ -40,15 +127,63 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
 
     if player:
       player.state = PlayerState.DISCONNECTED
-      game_manager.remove_player(player.id)
-
-      # Notify other players in the game
+      
+      # Check if player was in an active game
       game = game_manager.get_game_by_player(player.id)
-      if game:
-        await sio.emit('player_disconnected', {
-            'player_id': player.id,
-            'player_name': player.name
-        }, room=f"game_{game.id}")
+      if game and game.state == GameState.IN_PROGRESS:
+        logger.info(f"Player {player.name} disconnected from active game {game.id}")
+        
+        # Find the remaining player
+        remaining_player = None
+        for p in game.players:
+          if p.id != player.id and p.state != PlayerState.DISCONNECTED:
+            remaining_player = p
+            break
+        
+        if remaining_player and not remaining_player.is_cpu:
+          # Award win to remaining player via forfeit - forfeit handler will manage cleanup
+          await handle_game_forfeit(sio, game_manager, game.id, player.id, remaining_player.id)
+          return  # Don't do additional cleanup, forfeit handler takes care of it
+        else:
+          # Just clean up the game if no valid remaining player
+          game_manager.remove_player(player.id)
+          await sio.emit('player_disconnected', {
+              'player_id': player.id,
+              'player_name': player.name
+          }, room=f"game_{game.id}")
+      else:
+        # Normal disconnect handling for waiting players or finished games
+        game_manager.remove_player(player.id)
+        if game:
+          await sio.emit('player_disconnected', {
+              'player_id': player.id,
+              'player_name': player.name
+          }, room=f"game_{game.id}")
+
+  @sio.event
+  async def heartbeat(sid, data):
+    """Handle heartbeat from client to detect active connections"""
+    # Update last seen time for the player
+    player_found = False
+    for game in game_manager.games.values():
+      for player in game.players:
+        if player.socket_id == sid:
+          player.last_seen = time.time()
+          logger.debug(f"Heartbeat received from {player.name} in game {game.id}")
+          player_found = True
+          break
+      if player_found:
+        break
+    
+    if not player_found:
+      logger.debug(f"Heartbeat received from unknown socket {sid}")
+
+  @sio.event
+  async def player_leaving(sid, data):
+    """Handle explicit player leaving notification"""
+    logger.info(f"Player leaving notification from {sid}: {data}")
+    # Trigger the same logic as disconnect
+    await disconnect(sid)
 
   @sio.event
   async def join_game(sid, data):
@@ -213,9 +348,20 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
         await sio.emit('error', {'message': 'Game not found'}, room=sid)
         return
 
+      # Update last seen timestamp for activity tracking
+      player.last_seen = time.time()
+
       if game.state != GameState.IN_PROGRESS:
         logger.error(f"Game {game.id} not in progress, current state: {game.state}")
-        await sio.emit('error', {'message': f'Game is not in progress (current state: {game.state.value})'}, room=sid)
+        if game.state == GameState.FINISHED:
+          # Check if this was a forfeit by looking for disconnected players
+          disconnected_players = [p for p in game.players if p.state == PlayerState.DISCONNECTED]
+          if disconnected_players:
+            await sio.emit('error', {'message': 'Game ended due to opponent disconnect'}, room=sid)
+          else:
+            await sio.emit('error', {'message': 'Game has already finished'}, room=sid)
+        else:
+          await sio.emit('error', {'message': f'Game is not in progress (current state: {game.state.value})'}, room=sid)
         return
 
       if game.current_round == 0:
@@ -486,6 +632,139 @@ async def resolve_round(sio: socketio.AsyncServer, game_manager: GameManager, ga
     import asyncio
     await asyncio.sleep(5)
     await start_round(sio, game_manager, game_id, game.current_round + 1)
+
+
+async def handle_game_forfeit(sio: socketio.AsyncServer, game_manager: GameManager, game_id: str, forfeiting_player_id: str, winning_player_id: str):
+  """Handle game forfeit when a player disconnects"""
+  
+  game = game_manager.games.get(game_id)
+  if not game:
+    return
+  
+  logger.info(f"Handling forfeit in game {game_id}: {forfeiting_player_id} forfeited, {winning_player_id} wins")
+  
+  # Get player objects
+  winning_player = None
+  forfeiting_player = None
+  
+  for player in game.players:
+    if player.id == winning_player_id:
+      winning_player = player
+    elif player.id == forfeiting_player_id:
+      forfeiting_player = player
+  
+  if not winning_player or not forfeiting_player:
+    logger.error(f"Could not find players for forfeit in game {game_id}")
+    return
+  
+  # Check if players have database user IDs
+  winning_user_id = getattr(winning_player, 'user_id', None)
+  forfeiting_user_id = getattr(forfeiting_player, 'user_id', None)
+  
+  if not winning_user_id or not forfeiting_user_id:
+    logger.warning(f"Forfeit involves guest players - skipping ELO recording. Winner user_id: {winning_user_id}, Loser user_id: {forfeiting_user_id}")
+    # Still send the forfeit notification but don't record ELO
+    # Continue to game state update and cleanup without ELO recording
+  else:
+    logger.info(f"Forfeit with database users - Winner: {winning_user_id}, Loser: {forfeiting_user_id}")
+  
+  # Calculate scores for forfeit: winner gets 9 (max possible), loser gets 0
+  forfeit_winner_score = 9
+  forfeit_loser_score = 0
+  
+  # Update player scores
+  winning_player.score = forfeit_winner_score
+  forfeiting_player.score = forfeit_loser_score
+  
+  # Notify players about forfeit BEFORE changing game state
+  forfeit_event_data = {
+      'reason': 'opponent_disconnected',
+      'winner_id': winning_player_id,
+      'winner_name': winning_player.name,
+      'forfeiting_player_name': forfeiting_player.name,
+      'final_scores': [{
+          'id': winning_player.id,
+          'name': winning_player.name,
+          'score': forfeit_winner_score,
+          'elo_rating': winning_player.elo_rating,
+          'is_cpu': winning_player.is_cpu
+      }, {
+          'id': forfeiting_player.id,
+          'name': forfeiting_player.name,
+          'score': forfeit_loser_score,
+          'elo_rating': forfeiting_player.elo_rating,
+          'is_cpu': forfeiting_player.is_cpu
+      }]
+  }
+  
+  # Send to game room
+  await sio.emit('game_forfeited', forfeit_event_data, room=f"game_{game_id}")
+  
+  # Also send directly to remaining player as fallback
+  if winning_player.socket_id:
+    logger.info(f"Sending forfeit notification directly to winner {winning_player.name} (socket: {winning_player.socket_id})")
+    try:
+      # Check if socket is still connected
+      connected_sockets = await sio.get_session(winning_player.socket_id)
+      logger.info(f"Winner socket {winning_player.socket_id} session exists: {connected_sockets is not None}")
+    except Exception as e:
+      logger.warning(f"Winner socket {winning_player.socket_id} not found: {e}")
+    
+    await sio.emit('game_forfeited', forfeit_event_data, room=winning_player.socket_id)
+    
+    # Send a test event to make sure the socket is receiving events
+    await sio.emit('forfeit_test', {'message': 'If you see this, socket events are working'}, room=winning_player.socket_id)
+  
+  # Give a small delay to ensure notification is received before changing game state
+  import asyncio
+  await asyncio.sleep(0.1)
+  
+  # Set game as finished after notification
+  game.state = GameState.FINISHED
+  game.winner_id = winning_player_id
+  
+  # Record game result with forfeit via internal API call (only for database users)
+  if winning_user_id and forfeiting_user_id:
+    try:
+      logger.info(f"Recording forfeit result: winner={winning_user_id}, loser={forfeiting_user_id}, scores={forfeit_winner_score}-{forfeit_loser_score}")
+      
+      # Import here to avoid circular imports
+      from main import record_game_result
+      from main import GameResultRequest
+      
+      # Create request object for internal API call using database user IDs
+      forfeit_request = GameResultRequest(
+          player1_id=winning_user_id,
+          player2_id=forfeiting_user_id,
+          player1_score=forfeit_winner_score,
+          player2_score=forfeit_loser_score,
+          game_duration=None
+      )
+      
+      logger.debug(f"Calling record_game_result with request: {forfeit_request}")
+      
+      # Call the API function directly instead of making HTTP request
+      result = await record_game_result(forfeit_request)
+      logger.info(f"Successfully recorded forfeit result for game {game_id}: {result}")
+        
+    except Exception as e:
+      logger.error(f"Error recording forfeit result for game {game_id}: {e}")
+      import traceback
+      logger.error(f"Traceback: {traceback.format_exc()}")
+  else:
+    logger.info(f"Skipping ELO recording for forfeit in game {game_id} - guest players involved")
+  
+  # Clean up game after a delay
+  import asyncio
+  await asyncio.sleep(10)
+  if game_id in game_manager.games:
+    # Remove players from player_game_map
+    for player in game.players:
+      if player.id in game_manager.player_game_map:
+        del game_manager.player_game_map[player.id]
+    # Remove game
+    del game_manager.games[game_id]
+    logger.info(f"Cleaned up forfeited game {game_id}")
 
 
 async def end_game(sio: socketio.AsyncServer, game_manager: GameManager, game_id: str):

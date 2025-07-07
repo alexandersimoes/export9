@@ -241,7 +241,13 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
               <div className="mb-2 md:mb-4">
                 <div className="text-3xl md:text-4xl mb-2">🏆</div>
                 <h1 className="text-4xl font-bold mb-2" style={{ color: 'var(--poker-accent)' }}>You Won!</h1>
-                <p className="text-lg" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Congratulations on your victory!</p>
+                {gameState.gameEndedEarly && gameState.forfeitReason === 'opponent_disconnected' ? (
+                  <p className="text-lg" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>
+                    {gameState.forfeitingPlayerName} disconnected - Victory by forfeit!
+                  </p>
+                ) : (
+                  <p className="text-lg" style={{ color: 'var(--poker-dark-text)', opacity: 0.8 }}>Congratulations on your victory!</p>
+                )}
               </div>
             )}
             

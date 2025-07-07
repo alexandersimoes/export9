@@ -32,6 +32,9 @@ export interface GameState {
   players: Player[];
   your_cards: Card[];
   lastRoundResult?: RoundResult;
+  gameEndedEarly?: boolean;
+  forfeitReason?: string;
+  forfeitingPlayerName?: string;
 }
 
 export interface RoundResult {

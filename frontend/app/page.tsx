@@ -102,15 +102,16 @@ function HomeContent() {
             >
               {user ? '🎯 Find Match' : 'Loading...'}
             </button>
-            
-            {user && (
+
+            {/* Temporary disable private rooms */}
+            {/* {user && (
               <button
                 onClick={() => setShowPrivateRoomModal(true)}
                 className="w-full bg-poker-accent text-poker-dark-text font-semibold py-3 px-3 rounded-lg hover:opacity-90 transition-opacity"
               >
                 🔒 Create Private Room
               </button>
-            )}
+            )} */}
             
             {user && (
               <div className="grid grid-cols-2 gap-3">

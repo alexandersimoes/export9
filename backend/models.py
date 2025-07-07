@@ -65,6 +65,8 @@ class Player:
   is_cpu: bool = False
   elo_rating: Optional[int] = None
   room_code: Optional[str] = None
+  user_id: Optional[str] = None
+  last_seen: float = field(default_factory=time.time)
 
   def __post_init__(self):
     if not self.cards:
