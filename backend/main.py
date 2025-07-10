@@ -301,6 +301,7 @@ async def get_oec_leaderboard(limit: int = 50) -> List[Dict[str, Any]]:
       async with session.post(
         'https://oec.world/api/games/leaderboard',
         json={"game": "export-holdem"},
+        headers={"Origin": "oec.world"},
         timeout=aiohttp.ClientTimeout(total=10)
       ) as response:
         if response.status == 200:

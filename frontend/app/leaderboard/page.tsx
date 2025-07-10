@@ -79,7 +79,7 @@ export default function LeaderboardPage() {
             <div className="bg-white border-2 border-poker-strong-bg rounded-lg p-1 inline-flex">
               <button
                 onClick={() => handleFilterChange('all')}
-                className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 md:px-4 leading-tight py-2 md:py-3 rounded-md font-medium transition-all duration-200 ${
                   filterType === 'all'
                     ? 'bg-red-800 text-white shadow-md scale-105'
                     : 'text-poker-dark-text hover:bg-poker-light-bg hover:scale-102'
@@ -89,7 +89,7 @@ export default function LeaderboardPage() {
               </button>
               <button
                 onClick={() => handleFilterChange('oec')}
-                className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 md:px-4 leading-tight py-2 md:py-3 rounded-md font-medium transition-all duration-200 ${
                   filterType === 'oec'
                     ? 'bg-red-800 text-white shadow-md scale-105'
                     : 'text-poker-dark-text hover:bg-poker-light-bg hover:scale-102'
@@ -99,7 +99,7 @@ export default function LeaderboardPage() {
               </button>
               <button
                 onClick={() => handleFilterChange('guest')}
-                className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
+                className={`px-2 md:px-4 leading-tight py-2 md:py-3 rounded-md font-medium transition-all duration-200 ${
                   filterType === 'guest'
                     ? 'bg-red-800 text-white shadow-md scale-105'
                     : 'text-poker-dark-text hover:bg-poker-light-bg hover:scale-102'
