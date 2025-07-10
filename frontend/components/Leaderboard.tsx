@@ -22,24 +22,27 @@ interface LeaderboardProps {
   onClose: () => void
 }
 
+type FilterType = 'all' | 'oec' | 'guest'
+
 export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [filterType, setFilterType] = useState<FilterType>('all')
 
   useEffect(() => {
     if (isOpen) {
-      fetchLeaderboard()
+      fetchLeaderboard(filterType)
     }
-  }, [isOpen])
+  }, [isOpen, filterType])
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = async (filter: FilterType = 'all') => {
     setLoading(true)
     setError(null)
     
     try {
       const apiUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://export9.oec.world'
-      const response = await fetch(`${apiUrl}/api/leaderboard`)
+      const response = await fetch(`${apiUrl}/api/leaderboard?filter_type=${filter}`)
       if (response.ok) {
         const data = await response.json()
         setLeaderboard(data)
@@ -51,6 +54,10 @@ export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleFilterChange = (newFilter: FilterType) => {
+    setFilterType(newFilter)
   }
 
   if (!isOpen) return null
@@ -88,6 +95,44 @@ export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
             </p>
           </div>
         )}
+
+        {/* Filter Controls */}
+        <div className="mb-4">
+          <div className="flex justify-center">
+            <div className="bg-white border-2 border-poker-strong-bg rounded-lg p-1 inline-flex text-xs">
+              <button
+                onClick={() => handleFilterChange('all')}
+                className={`px-3 py-1 rounded-md font-medium transition-all duration-200 ${
+                  filterType === 'all'
+                    ? 'bg-red-800 text-white shadow-sm scale-105'
+                    : 'text-poker-dark-text hover:bg-poker-light-bg hover:scale-102'
+                }`}
+              >
+                All Players
+              </button>
+              <button
+                onClick={() => handleFilterChange('oec')}
+                className={`px-3 py-1 rounded-md font-medium transition-all duration-200 ${
+                  filterType === 'oec'
+                    ? 'bg-red-800 text-white shadow-sm scale-105'
+                    : 'text-poker-dark-text hover:bg-poker-light-bg hover:scale-102'
+                }`}
+              >
+                🌐 OEC
+              </button>
+              <button
+                onClick={() => handleFilterChange('guest')}
+                className={`px-3 py-1 rounded-md font-medium transition-all duration-200 ${
+                  filterType === 'guest'
+                    ? 'bg-red-800 text-white shadow-sm scale-105'
+                    : 'text-poker-dark-text hover:bg-poker-light-bg hover:scale-102'
+                }`}
+              >
+                👤 Guest
+              </button>
+            </div>
+          </div>
+        </div>
 
         {!loading && !error && leaderboard.length > 0 && (
           <div className="space-y-2 sm:space-y-3">

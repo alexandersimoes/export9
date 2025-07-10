@@ -165,6 +165,8 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
     """Handle heartbeat from client to detect active connections"""
     # Update last seen time for the player
     player_found = False
+    
+    # First check if player is in an active game
     for game in game_manager.games.values():
       for player in game.players:
         if player.socket_id == sid:
@@ -174,6 +176,15 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
           break
       if player_found:
         break
+    
+    # If not in game, check waiting players
+    if not player_found:
+      for waiting_player in game_manager.waiting_players:
+        if waiting_player.socket_id == sid:
+          waiting_player.last_seen = time.time()
+          logger.debug(f"Heartbeat received from waiting player {waiting_player.name}")
+          player_found = True
+          break
     
     if not player_found:
       logger.debug(f"Heartbeat received from unknown socket {sid}")
@@ -228,6 +239,9 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
           state=PlayerState.WAITING,
           elo_rating=elo_rating
       )
+      
+      # Initialize last_seen timestamp
+      player.last_seen = time.time()
 
       # Add user_id and room_code to player object if provided
       if user_id:
@@ -257,6 +271,8 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
         # Join both players to game room
         for game_player in game.players:
           await sio.enter_room(game_player.socket_id, f"game_{game.id}")
+          # Reset last_seen to current time to prevent immediate timeout detection
+          game_player.last_seen = time.time()
           logger.info(f"Player {game_player.name} joined room game_{game.id}")
 
         # Start the game
@@ -304,6 +320,9 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
 
       # Join human player to game room (CPU doesn't need socket room)
       await sio.enter_room(player.socket_id, f"game_{game.id}")
+
+      # Reset last_seen to current time to prevent immediate timeout detection
+      player.last_seen = time.time()
 
       # Start the game
       game_manager.start_game(game.id)
@@ -844,6 +863,10 @@ async def handle_private_room_join(sio: socketio.AsyncServer, game_manager: Game
       # Join both players to game room
       await sio.enter_room(other_player.socket_id, f"game_{game.id}")
       await sio.enter_room(player.socket_id, f"game_{game.id}")
+      
+      # Reset last_seen to current time to prevent immediate timeout detection
+      other_player.last_seen = time.time()
+      player.last_seen = time.time()
       
       logger.info(f"Private room game created with ID: {game.id} for room {room_code}")
       

@@ -6,7 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import socketio
 from dotenv import load_dotenv
 import os
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 import requests
 import json
@@ -268,14 +268,75 @@ async def get_user(user_id: str):
 
 
 @app.get("/api/leaderboard", response_model=List[LeaderboardEntry])
-async def get_leaderboard(limit: int = 50):
-  """Get ELO leaderboard with external data"""
+async def get_leaderboard(limit: int = 50, filter_type: str = "all"):
+  """Get ELO leaderboard with external data
+  
+  Args:
+    limit: Maximum number of entries to return
+    filter_type: 'all', 'oec', or 'guest' to filter leaderboard entries
+  """
   try:
-    leaderboard = await db.get_enhanced_leaderboard(limit)
+    if filter_type == "oec":
+      # Get OEC-only leaderboard
+      leaderboard = await get_oec_leaderboard(limit)
+    elif filter_type == "guest":
+      # Get guest-only leaderboard (no oec_user_id)
+      leaderboard = db.get_guest_leaderboard(limit)
+    else:
+      # Get combined leaderboard (default)
+      leaderboard = await db.get_enhanced_leaderboard(limit)
+    
     return [LeaderboardEntry(**entry) for entry in leaderboard]
   except Exception as e:
     logger.error(f"Failed to get leaderboard: {e}")
     raise HTTPException(status_code=500, detail="Failed to get leaderboard")
+
+
+async def get_oec_leaderboard(limit: int = 50) -> List[Dict[str, Any]]:
+  """Get leaderboard data from OEC API"""
+  import aiohttp
+  
+  try:
+    async with aiohttp.ClientSession() as session:
+      async with session.post(
+        'https://oec.world/api/games/leaderboard',
+        json={"game": "export-holdem"},
+        timeout=aiohttp.ClientTimeout(total=10)
+      ) as response:
+        if response.status == 200:
+          result = await response.json()
+          if result.get('success') and result.get('results'):
+            # Handle both single result and array of results
+            oec_data = result['results'] if isinstance(result['results'], list) else [result['results']]
+            
+            # Convert OEC format to our leaderboard format
+            leaderboard = []
+            for entry in oec_data[:limit]:
+              leaderboard_entry = {
+                'display_name': entry.get('username', 'Unknown'),
+                'elo_rating': entry.get('new_elo', 1200),
+                'games_played': 1,  # OEC doesn't provide games_played
+                'wins': 1 if entry.get('new_elo', 1200) > entry.get('old_elo', 1200) else 0,
+                'losses': 1 if entry.get('new_elo', 1200) < entry.get('old_elo', 1200) else 0,
+                'draws': 0,
+                'win_rate': 100.0 if entry.get('new_elo', 1200) > entry.get('old_elo', 1200) else 0.0,
+                'external_elo': entry.get('new_elo'),
+                'external_old_elo': entry.get('old_elo'),
+                'external_last_game': entry.get('date'),
+                'has_external_data': True
+              }
+              leaderboard.append(leaderboard_entry)
+            
+            # Sort by ELO rating
+            leaderboard.sort(key=lambda x: x['elo_rating'], reverse=True)
+            return leaderboard
+        
+        logger.warning(f"OEC leaderboard API returned status {response.status}")
+        return []
+        
+  except Exception as e:
+    logger.error(f"Failed to fetch OEC leaderboard: {e}")
+    return []
 
 
 @app.post("/api/games/result")

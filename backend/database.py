@@ -338,18 +338,18 @@ class Database:
     """Get enhanced leaderboard with external API data"""
     import aiohttp
     import asyncio
-    
+
     # Get local leaderboard data
     local_data = self.get_leaderboard(limit)
-    
+
     # Fetch external leaderboard data
     external_data = []
     try:
       async with aiohttp.ClientSession() as session:
         async with session.post(
-          'https://dev.oec.world/api/games/leaderboard',
-          json={"game": "export-holdem"},
-          timeout=aiohttp.ClientTimeout(total=10)
+            'https://oec.world/api/games/leaderboard',
+            json={"game": "export-holdem"},
+            timeout=aiohttp.ClientTimeout(total=10)
         ) as response:
           if response.status == 200:
             result = await response.json()
@@ -358,19 +358,19 @@ class Database:
     except Exception as e:
       logger.error(f"Failed to fetch external leaderboard: {e}")
       # Continue with local data only if external API fails
-    
+
     # Combine local and external data
     enhanced_data = []
     for entry in local_data:
       enhanced_entry = entry.copy()
-      
+
       # Look for matching external data by display name
       external_match = None
       for ext_entry in external_data:
         if ext_entry.get('username') == entry['display_name']:
           external_match = ext_entry
           break
-      
+
       if external_match:
         enhanced_entry['external_elo'] = external_match.get('new_elo')
         enhanced_entry['external_old_elo'] = external_match.get('old_elo')
@@ -381,10 +381,40 @@ class Database:
         enhanced_entry['external_old_elo'] = None
         enhanced_entry['external_last_game'] = None
         enhanced_entry['has_external_data'] = False
-      
+
       enhanced_data.append(enhanced_entry)
-    
+
     return enhanced_data
+
+  def get_guest_leaderboard(self, limit: int = 50) -> List[Dict[str, Any]]:
+    """Get ELO leaderboard for guest players only (no oec_user_id)"""
+    conn = self.get_connection()
+    try:
+      rows = conn.execute('''
+                SELECT 
+                    display_name, elo_rating, games_played, wins, losses, draws,
+                    CASE WHEN games_played > 0 
+                         THEN ROUND((wins * 100.0 / games_played), 1) 
+                         ELSE 0 END as win_rate
+                FROM users 
+                WHERE games_played >= 3 
+                AND (oec_user_id IS NULL OR oec_user_id = '')
+                ORDER BY elo_rating DESC, games_played DESC
+                LIMIT ?
+            ''', (limit,)).fetchall()
+
+      leaderboard = [dict(row) for row in rows]
+
+      # Add external data fields (all None for guest players)
+      for entry in leaderboard:
+        entry['external_elo'] = None
+        entry['external_old_elo'] = None
+        entry['external_last_game'] = None
+        entry['has_external_data'] = False
+
+      return leaderboard
+    finally:
+      conn.close()
 
   def find_matched_opponent(self, user_elo: int, exclude_user_id) -> Optional[Dict[str, Any]]:
     """Find opponent with closest ELO rating"""
@@ -442,7 +472,7 @@ class Database:
       created_at = datetime.now()
       # Rooms expire after 24 hours
       expires_at = datetime.now().replace(hour=23, minute=59, second=59, microsecond=999999)
-      
+
       # Ensure unique room code
       max_attempts = 10
       for _ in range(max_attempts):

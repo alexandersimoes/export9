@@ -18,23 +18,26 @@ interface LeaderboardEntry {
   has_external_data?: boolean
 }
 
+type FilterType = 'all' | 'oec' | 'guest'
+
 export default function LeaderboardPage() {
   const router = useRouter()
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [filterType, setFilterType] = useState<FilterType>('all')
 
   useEffect(() => {
-    fetchLeaderboard()
-  }, [])
+    fetchLeaderboard(filterType)
+  }, [filterType])
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = async (filter: FilterType = 'all') => {
     setLoading(true)
     setError(null)
     
     try {
       const apiUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://export9.oec.world'
-      const response = await fetch(`${apiUrl}/api/leaderboard`)
+      const response = await fetch(`${apiUrl}/api/leaderboard?filter_type=${filter}`)
       if (response.ok) {
         const data = await response.json()
         setLeaderboard(data)
@@ -46,6 +49,10 @@ export default function LeaderboardPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleFilterChange = (newFilter: FilterType) => {
+    setFilterType(newFilter)
   }
 
   return (
@@ -64,6 +71,44 @@ export default function LeaderboardPage() {
           >
             ← Back to Game
           </button>
+        </div>
+
+        {/* Filter Controls */}
+        <div className="mb-6">
+          <div className="flex justify-center">
+            <div className="bg-white border-2 border-poker-strong-bg rounded-lg p-1 inline-flex">
+              <button
+                onClick={() => handleFilterChange('all')}
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
+                  filterType === 'all'
+                    ? 'bg-red-800 text-white shadow-md scale-105'
+                    : 'text-poker-dark-text hover:bg-poker-light-bg hover:scale-102'
+                }`}
+              >
+                All Players
+              </button>
+              <button
+                onClick={() => handleFilterChange('oec')}
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
+                  filterType === 'oec'
+                    ? 'bg-red-800 text-white shadow-md scale-105'
+                    : 'text-poker-dark-text hover:bg-poker-light-bg hover:scale-102'
+                }`}
+              >
+                🌐 OEC Accounts
+              </button>
+              <button
+                onClick={() => handleFilterChange('guest')}
+                className={`px-4 py-2 rounded-md font-medium transition-all duration-200 ${
+                  filterType === 'guest'
+                    ? 'bg-red-800 text-white shadow-md scale-105'
+                    : 'text-poker-dark-text hover:bg-poker-light-bg hover:scale-102'
+                }`}
+              >
+                👤 Guest Players
+              </button>
+            </div>
+          </div>
         </div>
 
         {loading && (
