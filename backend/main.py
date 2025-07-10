@@ -310,11 +310,30 @@ async def get_oec_leaderboard(limit: int = 50) -> List[Dict[str, Any]]:
             # Handle both single result and array of results
             oec_data = result['results'] if isinstance(result['results'], list) else [result['results']]
             
-            # Helper function to process username (remove part before pipe)
+            # Helper function to process username (handle pipes and emails)
             def process_username(username):
+              # Handle pipe character
               if '|' in username:
-                return username.split('|')[-1].strip()
-              return username
+                parts = username.split('|')
+                before_pipe = parts[0].strip()
+                after_pipe = parts[-1].strip()
+                
+                # If after pipe is "google", use before pipe but only part before @
+                if after_pipe.lower() == "google":
+                  if '@' in before_pipe:
+                    return before_pipe.split('@')[0].strip()
+                  return before_pipe
+                else:
+                  # Use after pipe (existing behavior)
+                  processed = after_pipe
+              else:
+                processed = username
+              
+              # Handle email addresses - only show part before @
+              if '@' in processed:
+                return processed.split('@')[0].strip()
+              
+              return processed
             
             # Convert OEC format to our leaderboard format
             leaderboard = []
