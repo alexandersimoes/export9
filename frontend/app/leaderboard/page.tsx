@@ -123,7 +123,7 @@ export default function LeaderboardPage() {
             <h3 className="font-semibold">Error Loading Leaderboard</h3>
             <p>{error}</p>
             <button
-              onClick={fetchLeaderboard}
+              onClick={() => fetchLeaderboard()}
               className="mt-3 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
             >
               Try Again
