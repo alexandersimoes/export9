@@ -310,11 +310,20 @@ async def get_oec_leaderboard(limit: int = 50) -> List[Dict[str, Any]]:
             # Handle both single result and array of results
             oec_data = result['results'] if isinstance(result['results'], list) else [result['results']]
             
+            # Helper function to process username (remove part before pipe)
+            def process_username(username):
+              if '|' in username:
+                return username.split('|')[-1].strip()
+              return username
+            
             # Convert OEC format to our leaderboard format
             leaderboard = []
             for entry in oec_data[:limit]:
+              original_username = entry.get('username', 'Unknown')
+              processed_username = process_username(original_username)
+              
               leaderboard_entry = {
-                'display_name': entry.get('username', 'Unknown'),
+                'display_name': processed_username,
                 'elo_rating': entry.get('new_elo', 1200),
                 'games_played': 1,  # OEC doesn't provide games_played
                 'wins': 1 if entry.get('new_elo', 1200) > entry.get('old_elo', 1200) else 0,

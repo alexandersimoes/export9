@@ -360,16 +360,33 @@ class Database:
       logger.error(f"Failed to fetch external leaderboard: {e}")
       # Continue with local data only if external API fails
 
+    # Helper function to process username (remove part before pipe)
+    def process_username(username):
+      if '|' in username:
+        return username.split('|')[-1].strip()
+      return username
+
     # Combine local and external data
     enhanced_data = []
+    external_usernames_added = set()
+    
+    # First, add local players with external data matching
     for entry in local_data:
       enhanced_entry = entry.copy()
+      
+      # Process display name for pipe character
+      processed_display_name = process_username(entry['display_name'])
+      enhanced_entry['display_name'] = processed_display_name
 
-      # Look for matching external data by display name
+      # Look for matching external data by display name (try both original and processed)
       external_match = None
       for ext_entry in external_data:
-        if ext_entry.get('username') == entry['display_name']:
+        ext_username = ext_entry.get('username', '')
+        if (ext_username == entry['display_name'] or 
+            ext_username == processed_display_name or
+            process_username(ext_username) == processed_display_name):
           external_match = ext_entry
+          external_usernames_added.add(ext_username)
           break
 
       if external_match:
@@ -384,6 +401,29 @@ class Database:
         enhanced_entry['has_external_data'] = False
 
       enhanced_data.append(enhanced_entry)
+    
+    # Then, add external players who aren't in local database
+    for ext_entry in external_data:
+      ext_username = ext_entry.get('username', '')
+      if ext_username not in external_usernames_added:
+        # Create entry for external-only player
+        external_only_entry = {
+          'display_name': process_username(ext_username),
+          'elo_rating': ext_entry.get('new_elo', 1200),
+          'games_played': 1,  # Show as having played at least 1 game externally
+          'wins': 1 if ext_entry.get('new_elo', 1200) > ext_entry.get('old_elo', 1200) else 0,
+          'losses': 1 if ext_entry.get('new_elo', 1200) < ext_entry.get('old_elo', 1200) else 0,
+          'draws': 0,
+          'win_rate': 100.0 if ext_entry.get('new_elo', 1200) > ext_entry.get('old_elo', 1200) else 0.0,
+          'external_elo': ext_entry.get('new_elo'),
+          'external_old_elo': ext_entry.get('old_elo'),
+          'external_last_game': ext_entry.get('date'),
+          'has_external_data': True
+        }
+        enhanced_data.append(external_only_entry)
+    
+    # Sort by ELO rating (prioritize external ELO if available, otherwise local ELO)
+    enhanced_data.sort(key=lambda x: x.get('external_elo') or x.get('elo_rating', 0), reverse=True)
 
     return enhanced_data
 

@@ -215,7 +215,7 @@ export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
                     <div className="mt-2 pt-2 border-t border-poker-strong-bg border-opacity-10">
                       <div className="flex items-center justify-between text-xs">
                         <div className="text-poker-dark-text opacity-60">
-                          🌐 External ELO
+                          <img src="/oec-icon.png" alt="OEC" className="inline w-4 h-4 mr-1" /> OEC Account
                         </div>
                         <div className="flex items-center space-x-2">
                           {player.external_old_elo && player.external_elo && (
