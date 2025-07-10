@@ -235,7 +235,7 @@ export function getProductEmoji(productId: string): string {
     'liquid_pumps': '⚙️',
     'orthopedic_appliances': '🦴',
     'raw_aluminium': '⚪',
-    'sound_recordings': '🎵',
+    'flat_panel_displays': '📺',
     'electricity': '⚡',
     'hot_rolled_iron': '🔩',
     'construction_vehicles': '🏗️',

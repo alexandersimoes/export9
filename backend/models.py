@@ -224,7 +224,7 @@ class GameManager:
         ("liquid_pumps", "Liquid Pumps", "industrial", "168413"),
         ("orthopedic_appliances", "Orthopedic Appliances", "healthcare", "189021"),
         ("raw_aluminium", "Raw Aluminium", "materials", "157601"),
-        ("sound_recordings", "Sound Recordings", "media", "168524"),
+        ("flat_panel_displays", "Flat Panel Displays", "electronics", "168524"),
         ("electricity", "Electricity", "energy", "52716"),
         ("hot_rolled_iron", "Hot-Rolled Iron", "materials", "157208"),
         ("construction_vehicles", "Large Construction Vehicles", "construction", "168429"),

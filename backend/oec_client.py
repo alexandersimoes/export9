@@ -120,7 +120,7 @@ class OECClient:
       "168413": OECProduct("168413", "Liquid Pumps", "industrial"),
       "189021": OECProduct("189021", "Orthopedic Appliances", "healthcare"),
       "157601": OECProduct("157601", "Raw Aluminium", "materials"),
-      "168524": OECProduct("168524", "Sound Recordings", "media"),
+      "168524": OECProduct("168524", "Flat Panel Displays", "electronics"),
       "52716": OECProduct("52716", "Electricity", "energy"),
       "157208": OECProduct("157208", "Hot-Rolled Iron", "materials"),
       "168429": OECProduct("168429", "Large Construction Vehicles", "construction"),
