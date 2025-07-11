@@ -103,6 +103,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
     })
     
     // Create game history entry
+    const isDraw = currentPlayer.score === opponent.score
     const gameHistoryEntry = {
       game: 'export-holdem',
       meta: {
@@ -120,6 +121,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
         eloChange: eloChange
       },
       won: isWinner,
+      isDraw: isDraw,
       date: new Date().toISOString()
     }
     

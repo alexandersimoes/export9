@@ -165,10 +165,11 @@ export function UserProvider({ children }: UserProviderProps) {
             const gamesPlayed = session.history.length;
             const wins = session.history.filter(h => h.won).length;
             const draws = session.history.filter(h => 
-              !h.won && 
               (h?.answer?.playerScore ?? 0) === (h?.answer?.opponentScore ?? 0)
             ).length;
-            const losses = session.history.filter(h => !h.won).length - draws;
+            const losses = session.history.filter(h => 
+              !h.won && (h?.answer?.playerScore ?? 0) !== (h?.answer?.opponentScore ?? 0)
+            ).length;
             const eloCategory = elo < 1200 ? 'Beginner' : elo < 1400 ? 'Intermediate' : elo < 1600 ? 'Advanced' : 'Expert';
             
             setUser({
@@ -305,8 +306,12 @@ export function UserProvider({ children }: UserProviderProps) {
         const currentElo = latestGame?.submission?.newElo || 1200
         const gamesPlayed = history.length
         const wins = history.filter((h: any) => h.won).length
-        const losses = history.filter((h: any) => !h.won && !h.isDraw).length
-        const draws = history.filter((h: any) => h.isDraw).length
+        const draws = history.filter((h: any) => 
+          (h?.answer?.playerScore ?? 0) === (h?.answer?.opponentScore ?? 0)
+        ).length
+        const losses = history.filter((h: any) => 
+          !h.won && (h?.answer?.playerScore ?? 0) !== (h?.answer?.opponentScore ?? 0)
+        ).length
         const eloCategory = currentElo < 1200 ? 'Beginner' : currentElo < 1400 ? 'Intermediate' : currentElo < 1600 ? 'Advanced' : 'Expert'
         
         // Update user with calculated stats
