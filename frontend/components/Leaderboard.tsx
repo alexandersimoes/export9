@@ -63,8 +63,8 @@ export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
   if (!isOpen) return null
 
   return (
-    <div className="inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
-      <div className="bg-poker-light-bg rounded-lg p-3 sm:p-6 max-w-2xl w-full mx-1 sm:mx-2 md:mx-4 max-h-[90vh] overflow-y-auto border-2 border-poker-strong-bg">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
+      <div className="bg-poker-light-bg rounded-lg p-3 sm:p-6 max-w-2xl w-full mx-1 sm:mx-2 md:mx-4 max-h-[90vh] overflow-y-auto border-2 border-poker-strong-bg overflow-x-hidden">
         <div className="flex justify-between items-center mb-4 sm:mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-poker-dark-text">ELO Leaderboard</h2>
           <button
@@ -143,10 +143,10 @@ export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
               return (
                 <div
                   key={index}
-                  className="bg-white rounded-lg p-2 sm:p-4 border-2 border-poker-strong-bg border-opacity-20 hover:border-opacity-40 transition-all"
+                  className="bg-white rounded-lg p-2 sm:p-4 border-2 border-poker-strong-bg border-opacity-20 hover:border-opacity-40 transition-all overflow-hidden"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
+                  <div className="flex items-center justify-between min-w-0">
+                    <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
                       <div className="text-lg sm:text-2xl font-bold text-poker-strong-bg flex-shrink-0">
                         #{index + 1}
                       </div>
@@ -154,7 +154,7 @@ export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
                         className="w-3 h-3 sm:w-4 sm:h-4 rounded-full flex-shrink-0"
                         style={{ backgroundColor: eloColor }}
                       />
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="font-bold text-poker-dark-text text-sm sm:text-base truncate">
                           {player.display_name}
                         </div>
@@ -175,7 +175,7 @@ export default function Leaderboard({ isOpen, onClose }: LeaderboardProps) {
                   </div>
                   
                   <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-poker-strong-bg border-opacity-10">
-                    <div className="grid grid-cols-4 gap-1 sm:gap-4 text-center text-xs sm:text-sm">
+                    <div className="grid grid-cols-4 gap-1 sm:gap-4 text-center text-xs sm:text-sm overflow-x-auto">
                       <div>
                         <div className="font-bold text-poker-dark-text">
                           {player.games_played}
