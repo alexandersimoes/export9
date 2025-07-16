@@ -41,6 +41,18 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
     try {
       const geoData = getStoredGeolocationData()
       
+      // Calculate updated game stats from localStorage history (including current game)
+      const history = JSON.parse(localStorage.getItem('export9_history') || '[]')
+      const currentGameIsDraw = gameScores.playerScore === gameScores.opponentScore
+      
+      // Calculate stats including the current game
+      const totalGames = history.length + 1 // +1 for current game
+      const wins = history.filter((h: any) => h.won).length + (won ? 1 : 0)
+      const draws = history.filter((h: any) => 
+        (h?.answer?.playerScore ?? 0) === (h?.answer?.opponentScore ?? 0)
+      ).length + (currentGameIsDraw ? 1 : 0)
+      const losses = totalGames - wins - draws
+      
       await fetch('https://oec.world/api/games/score', {
         headers: {
           Accept: 'application/json',
@@ -61,7 +73,11 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
           submission: {
             oldElo: eloData.oldElo,
             newElo: eloData.newElo,
-            eloChange: eloData.newElo - eloData.oldElo
+            eloChange: eloData.newElo - eloData.oldElo,
+            totalGames: totalGames,
+            wins: wins,
+            losses: losses,
+            draws: draws
           },
           won: won,
         }),
