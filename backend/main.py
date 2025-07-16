@@ -270,7 +270,7 @@ async def get_user(user_id: str):
 @app.get("/api/leaderboard", response_model=List[LeaderboardEntry])
 async def get_leaderboard(limit: int = 50, filter_type: str = "all"):
   """Get ELO leaderboard with external data
-  
+
   Args:
     limit: Maximum number of entries to return
     filter_type: 'all', 'oec', or 'guest' to filter leaderboard entries
@@ -285,7 +285,7 @@ async def get_leaderboard(limit: int = 50, filter_type: str = "all"):
     else:
       # Get combined leaderboard (default)
       leaderboard = await db.get_enhanced_leaderboard(limit)
-    
+
     return [LeaderboardEntry(**entry) for entry in leaderboard]
   except Exception as e:
     logger.error(f"Failed to get leaderboard: {e}")
@@ -295,21 +295,21 @@ async def get_leaderboard(limit: int = 50, filter_type: str = "all"):
 async def get_oec_leaderboard(limit: int = 50) -> List[Dict[str, Any]]:
   """Get leaderboard data from OEC API"""
   import aiohttp
-  
+
   try:
     async with aiohttp.ClientSession() as session:
       async with session.post(
-        'https://oec.world/api/games/leaderboard',
-        json={"game": "export-holdem"},
-        headers={"Origin": "oec.world"},
-        timeout=aiohttp.ClientTimeout(total=10)
+          'https://oec.world/api/games/leaderboard',
+          json={"game": "export-holdem"},
+          headers={"Origin": "oec.world"},
+          timeout=aiohttp.ClientTimeout(total=10)
       ) as response:
         if response.status == 200:
           result = await response.json()
           if result.get('success') and result.get('results'):
             # Handle both single result and array of results
             oec_data = result['results'] if isinstance(result['results'], list) else [result['results']]
-            
+
             # Helper function to process username (handle pipes and emails)
             def process_username(username):
               # Handle pipe character
@@ -317,7 +317,7 @@ async def get_oec_leaderboard(limit: int = 50) -> List[Dict[str, Any]]:
                 parts = username.split('|')
                 before_pipe = parts[0].strip()
                 after_pipe = parts[-1].strip()
-                
+
                 # If after pipe is "google", use before pipe but only part before @
                 if after_pipe.lower() == "google":
                   if '@' in before_pipe:
@@ -328,41 +328,55 @@ async def get_oec_leaderboard(limit: int = 50) -> List[Dict[str, Any]]:
                   processed = after_pipe
               else:
                 processed = username
-              
+
               # Handle email addresses - only show part before @
               if '@' in processed:
                 return processed.split('@')[0].strip()
-              
+
               return processed
-            
+
             # Convert OEC format to our leaderboard format
             leaderboard = []
             for entry in oec_data[:limit]:
               original_username = entry.get('username', 'Unknown')
               processed_username = process_username(original_username)
-              
+
+              # Use actual game stats from OEC API if available, otherwise fallback to old logic
+              new_elo = entry.get('new_elo', 1200) or 1200
+              old_elo = entry.get('old_elo', 1200) or 1200
+              games_played = entry.get('totalgames', 1) or 1
+              wins = entry.get('wins', 0) or (1 if new_elo > old_elo else 0)
+              losses = entry.get('losses', 0) or (1 if new_elo < old_elo else 0)
+              draws = entry.get('draws', 0) or 0
+
+              # Calculate win rate based on actual games played
+              if games_played > 0:
+                win_rate = round((wins * 100.0) / games_played, 1)
+              else:
+                win_rate = 0.0
+
               leaderboard_entry = {
-                'display_name': processed_username,
-                'elo_rating': entry.get('new_elo', 1200),
-                'games_played': 1,  # OEC doesn't provide games_played
-                'wins': 1 if entry.get('new_elo', 1200) > entry.get('old_elo', 1200) else 0,
-                'losses': 1 if entry.get('new_elo', 1200) < entry.get('old_elo', 1200) else 0,
-                'draws': 0,
-                'win_rate': 100.0 if entry.get('new_elo', 1200) > entry.get('old_elo', 1200) else 0.0,
-                'external_elo': entry.get('new_elo'),
-                'external_old_elo': entry.get('old_elo'),
-                'external_last_game': entry.get('date'),
-                'has_external_data': True
+                  'display_name': processed_username,
+                  'elo_rating': entry.get('new_elo', 1200),
+                  'games_played': games_played,
+                  'wins': wins,
+                  'losses': losses,
+                  'draws': draws,
+                  'win_rate': win_rate,
+                  'external_elo': entry.get('new_elo'),
+                  'external_old_elo': entry.get('old_elo'),
+                  'external_last_game': entry.get('date'),
+                  'has_external_data': True
               }
               leaderboard.append(leaderboard_entry)
-            
+
             # Sort by ELO rating
             leaderboard.sort(key=lambda x: x['elo_rating'], reverse=True)
             return leaderboard
-        
+
         logger.warning(f"OEC leaderboard API returned status {response.status}")
         return []
-        
+
   except Exception as e:
     logger.error(f"Failed to fetch OEC leaderboard: {e}")
     return []
@@ -382,20 +396,20 @@ async def record_game_result(request: GameResultRequest):
         AND player1_score = ? AND player2_score = ? 
         AND created_at > datetime('now', '-5 minutes')
         LIMIT 1
-      ''', (request.player1_id, request.player2_id, 
+      ''', (request.player1_id, request.player2_id,
             request.player1_score, request.player2_score)).fetchone()
-      
+
       if duplicate_check:
         logger.info(f"Duplicate game result detected for players {request.player1_id} vs {request.player2_id}")
         # Return the actual ELO changes from the original game processing
         player1_elo_change = duplicate_check[2] - duplicate_check[1]  # after - before
         player2_elo_change = duplicate_check[4] - duplicate_check[3]  # after - before
         return {
-          "success": True,
-          "message": "Game already processed",
-          "player1_elo_change": player1_elo_change,
-          "player2_elo_change": player2_elo_change,
-          "elo_points_exchanged": duplicate_check[5]
+            "success": True,
+            "message": "Game already processed",
+            "player1_elo_change": player1_elo_change,
+            "player2_elo_change": player2_elo_change,
+            "elo_points_exchanged": duplicate_check[5]
         }
     finally:
       conn.close()
@@ -561,11 +575,11 @@ async def create_private_room(request: CreatePrivateRoomRequest):
     else:
       # Create new room if none exists
       room = db.create_private_room(request.creator_id)
-    
+
     # Build share URL
     base_url = "https://export9.oec.world" if os.getenv("NODE_ENV") == "production" else "http://localhost:3000"
     share_url = f"{base_url}/room/{room.room_code}"
-    
+
     return PrivateRoomResponse(
         id=room.id,
         creator_id=room.creator_id,
@@ -577,7 +591,7 @@ async def create_private_room(request: CreatePrivateRoomRequest):
         created_at=room.created_at.isoformat() if room.created_at else "",
         expires_at=room.expires_at.isoformat() if room.expires_at else ""
     )
-    
+
   except HTTPException:
     raise
   except Exception as e:
@@ -592,11 +606,11 @@ async def get_private_room(room_code: str):
     room = db.get_private_room_by_code(room_code)
     if not room:
       raise HTTPException(status_code=404, detail="Room not found or expired")
-    
+
     # Build share URL
     base_url = "https://export9.oec.world" if os.getenv("NODE_ENV") == "production" else "http://localhost:3000"
     share_url = f"{base_url}/room/{room.room_code}"
-    
+
     return PrivateRoomResponse(
         id=room.id,
         creator_id=room.creator_id,
@@ -608,7 +622,7 @@ async def get_private_room(room_code: str):
         created_at=room.created_at.isoformat() if room.created_at else "",
         expires_at=room.expires_at.isoformat() if room.expires_at else ""
     )
-    
+
   except HTTPException:
     raise
   except Exception as e:
@@ -623,12 +637,12 @@ async def get_user_private_rooms(user_id: str):
     user = db.get_user_by_id(user_id)
     if not user:
       raise HTTPException(status_code=404, detail="User not found")
-    
+
     rooms = db.get_private_rooms_by_creator(user_id)
-    
+
     # Build share URLs
     base_url = "https://export9.oec.world" if os.getenv("NODE_ENV") == "production" else "http://localhost:3000"
-    
+
     return [
         PrivateRoomResponse(
             id=room.id,
@@ -643,7 +657,7 @@ async def get_user_private_rooms(user_id: str):
         )
         for room in rooms
     ]
-    
+
   except HTTPException:
     raise
   except Exception as e:

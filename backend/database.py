@@ -337,7 +337,6 @@ class Database:
   async def get_enhanced_leaderboard(self, limit: int = 50) -> List[Dict[str, Any]]:
     """Get enhanced leaderboard with external API data"""
     import aiohttp
-    import asyncio
 
     # Get local leaderboard data
     local_data = self.get_leaderboard(limit)
@@ -367,7 +366,7 @@ class Database:
         parts = username.split('|')
         before_pipe = parts[0].strip()
         after_pipe = parts[-1].strip()
-        
+
         # If after pipe is "google", use before pipe but only part before @
         if after_pipe.lower() == "google":
           if '@' in before_pipe:
@@ -378,21 +377,21 @@ class Database:
           processed = after_pipe
       else:
         processed = username
-      
+
       # Handle email addresses - only show part before @
       if '@' in processed:
         return processed.split('@')[0].strip()
-      
+
       return processed
 
     # Combine local and external data
     enhanced_data = []
     external_usernames_added = set()
-    
+
     # First, add local players with external data matching
     for entry in local_data:
       enhanced_entry = entry.copy()
-      
+
       # Process display name for pipe character
       processed_display_name = process_username(entry['display_name'])
       enhanced_entry['display_name'] = processed_display_name
@@ -401,9 +400,9 @@ class Database:
       external_match = None
       for ext_entry in external_data:
         ext_username = ext_entry.get('username', '')
-        if (ext_username == entry['display_name'] or 
+        if (ext_username == entry['display_name'] or
             ext_username == processed_display_name or
-            process_username(ext_username) == processed_display_name):
+                process_username(ext_username) == processed_display_name):
           external_match = ext_entry
           external_usernames_added.add(ext_username)
           break
@@ -413,6 +412,20 @@ class Database:
         enhanced_entry['external_old_elo'] = external_match.get('old_elo')
         enhanced_entry['external_last_game'] = external_match.get('date')
         enhanced_entry['has_external_data'] = True
+
+        # Update with actual OEC game stats if available
+        if 'totalgames' in external_match:
+          enhanced_entry['games_played'] = external_match.get('totalgames')
+        if 'wins' in external_match:
+          enhanced_entry['wins'] = external_match.get('wins')
+        if 'losses' in external_match:
+          enhanced_entry['losses'] = external_match.get('losses')
+        if 'draws' in external_match:
+          enhanced_entry['draws'] = external_match.get('draws')
+
+        # Recalculate win rate with actual data
+        if enhanced_entry['games_played'] > 0:
+          enhanced_entry['win_rate'] = round((enhanced_entry['wins'] * 100.0) / enhanced_entry['games_played'], 1)
       else:
         enhanced_entry['external_elo'] = None
         enhanced_entry['external_old_elo'] = None
@@ -420,29 +433,43 @@ class Database:
         enhanced_entry['has_external_data'] = False
 
       enhanced_data.append(enhanced_entry)
-    
+
     # Then, add external players who aren't in local database
     for ext_entry in external_data:
       ext_username = ext_entry.get('username', '')
       if ext_username not in external_usernames_added:
         # Create entry for external-only player
+        # Use actual game stats from OEC API if available, otherwise fallback to old logic
+        games_played = ext_entry.get('totalgames', 1) or 1
+        new_elo = ext_entry.get('new_elo', 1200) or 1200
+        old_elo = ext_entry.get('old_elo', 1200) or 1200
+        wins = ext_entry.get('wins', 0) or (1 if new_elo > old_elo else 0)
+        losses = ext_entry.get('losses', 0) or (1 if new_elo < old_elo else 0)
+        draws = ext_entry.get('draws', 0) or 0
+
+        # Calculate win rate based on actual games played
+        if games_played > 0:
+          win_rate = round((wins * 100.0) / games_played, 1)
+        else:
+          win_rate = 0.0
+
         external_only_entry = {
-          'display_name': process_username(ext_username),
-          'elo_rating': ext_entry.get('new_elo', 1200),
-          'games_played': 1,  # Show as having played at least 1 game externally
-          'wins': 1 if ext_entry.get('new_elo', 1200) > ext_entry.get('old_elo', 1200) else 0,
-          'losses': 1 if ext_entry.get('new_elo', 1200) < ext_entry.get('old_elo', 1200) else 0,
-          'draws': 0,
-          'win_rate': 100.0 if ext_entry.get('new_elo', 1200) > ext_entry.get('old_elo', 1200) else 0.0,
-          'external_elo': ext_entry.get('new_elo'),
-          'external_old_elo': ext_entry.get('old_elo'),
-          'external_last_game': ext_entry.get('date'),
-          'has_external_data': True
+            'display_name': process_username(ext_username),
+            'elo_rating': ext_entry.get('new_elo', 1200),
+            'games_played': games_played,
+            'wins': wins,
+            'losses': losses,
+            'draws': draws,
+            'win_rate': win_rate,
+            'external_elo': ext_entry.get('new_elo'),
+            'external_old_elo': ext_entry.get('old_elo'),
+            'external_last_game': ext_entry.get('date'),
+            'has_external_data': True
         }
         enhanced_data.append(external_only_entry)
-    
+
     # Sort by ELO rating (prioritize external ELO if available, otherwise local ELO)
-    enhanced_data.sort(key=lambda x: x.get('external_elo') or x.get('elo_rating', 0), reverse=True)
+    enhanced_data.sort(key=lambda x: (x.get('external_elo') or x.get('elo_rating') or 0), reverse=True)
 
     return enhanced_data
 
