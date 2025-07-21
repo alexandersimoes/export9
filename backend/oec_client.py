@@ -55,6 +55,27 @@ class OECClient:
       "afken": OECCountry("afken", "Kenya"),
       "asidn": OECCountry("asidn", "Indonesia"),
       "saecu": OECCountry("saecu", "Ecuador"),
+      "euswe": OECCountry("euswe", "Sweden"),
+      "eunor": OECCountry("eunor", "Norway"),
+      "eubel": OECCountry("eubel", "Belgium"),
+      "euaut": OECCountry("euaut", "Austria"),
+      "asare": OECCountry("asare", "United Arab Emirates"),
+      "astur": OECCountry("astur", "Turkey"),
+      "saarg": OECCountry("saarg", "Argentina"),
+      "asvnm": OECCountry("asvnm", "Vietnam"),
+      "aspak": OECCountry("aspak", "Pakistan"),
+      "asbgd": OECCountry("asbgd", "Bangladesh"),
+      "assgp": OECCountry("assgp", "Singapore"),
+      "ashkg": OECCountry("ashkg", "Hong Kong"),
+      "asisr": OECCountry("asisr", "Israel"),
+      "ocnzl": OECCountry("ocnzl", "New Zealand"),
+      "asphl": OECCountry("asphl", "Philippines"),
+      "afken": OECCountry("afken", "Kenya"),
+      "afmar": OECCountry("afmar", "Morocco"),
+      "askaz": OECCountry("askaz", "Kazakhstan"),
+      "asqat": OECCountry("asqat", "Qatar"),
+      "afdza": OECCountry("afdza", "Algeria"),
+      "afegy": OECCountry("afegy", "Egypt"),
   }
 
   # OEC product mappings
@@ -130,6 +151,67 @@ class OECClient:
       "168501": OECProduct("168501", "Electric Motors", "electronics"),
       "116204": OECProduct("116204", "Non-Knit Women's Suits", "clothing"),
       "63304": OECProduct("63304", "Beauty Products", "cosmetics"),
+      "17870380": OECProduct("17870380", "Electric Motor Vehicles", "automotive"),
+      "20950450": OECProduct("20950450", "Video Game Consoles and Machines", "electronics"),
+      "2070700": OECProduct("2070700", "Cucumbers", "agriculture"),
+      "16851810": OECProduct("16851810", "Microphones", "electronics"),
+      "11630231": OECProduct("11630231", "Bed Linen", "clothing"),
+      "16851110": OECProduct("16851110", "Spark Plugs", "automotive"),
+      "2080510": OECProduct("2080510", "Oranges", "agriculture"),
+      "2080450": OECProduct("2080450", "Guavas and Mangoes", "agriculture"),
+      "6330790": OECProduct("6330790", "Perfumes", "cosmetics"),
+      "1030389": OECProduct("1030389", "Frozen Whole Fish", "agriculture"),
+      "2081010": OECProduct("2081010", "Strawberries", "agriculture"),
+      "2080550": OECProduct("2080550", "Lemons and Limes", "agriculture"),
+      "11620630": OECProduct("11620630", "Womens Blouses and Shirts", "clothing"),
+      "1030481": OECProduct("1030481", "Frozen Salmon Fillets", "agriculture"),
+      "2120740": OECProduct("2120740", "Sesame seeds", "agriculture"),
+      "6280461": OECProduct("6280461", "Silicon", "materials"),
+      "4240412": OECProduct("4240412", "E-cigarettes (vapes)", "tobacco"),
+      "5250100": OECProduct("5250100", "Salt", "food"),
+      "6300450": OECProduct("6300450", "Vitamins", "healthcare"),
+      "4240319": OECProduct("4240319", "Smoking Tobacco", "tobacco"),
+      "6340600": OECProduct("6340600", "Candles", "household"),
+      "16842131": OECProduct("16842131", "Intake Air Filters for Cars", "automotive"),
+      "15730830": OECProduct("15730830", "Doors and Windows", "construction"),
+      "6300410": OECProduct("6300410", "Penicillins and Streptomycins", "healthcare"),
+      "13700910": OECProduct("13700910", "Rear-view Mirrors", "automotive"),
+      "11610443": OECProduct("11610443", "Women's Dresses", "clothing"),
+      "9440122": OECProduct("9440122", "Wood Chips", "materials"),
+      "13680293": OECProduct("13680293", "Worked Granite", "construction"),
+      "10481810": OECProduct("10481810", "Toilet Paper", "household"),
+      "6330720": OECProduct("6330720", "Personal Deodorants and Antiperspirants", "cosmetics"),
+      "18903210": OECProduct("18903210", "Thermostats", "electronics"),
+      "16851650": OECProduct("16851650", "Microwave Ovens", "electronics"),
+      "6330410": OECProduct("6330410", "Lipsticks", "cosmetics"),
+      "16847050": OECProduct("16847050", "Cash Registers", "electronics"),
+      "6330420": OECProduct("6330420", "Eye make-up", "cosmetics"),
+      "18902212": OECProduct("18902212", "X-ray Machines (including CT Scans)", "healthcare"),
+      "14711019": OECProduct("14711019", "Platinum", "materials"),
+      "4200290": OECProduct("4200290", "Tomatoes", "food"),
+      "2120600": OECProduct("2120600", "Sunflower Seeds", "agriculture"),
+      "16842211": OECProduct("16842211", "Dish Washing Machines", "electronics"),
+      "17880212": OECProduct("17880212", "Helicopters", "transportation"),
+      "11611120": OECProduct("11611120", "Babies Garments", "clothing"),
+      "4210500": OECProduct("4210500", "Ice Cream", "food"),
+      "6330510": OECProduct("6330510", "Hair Shampoos", "cosmetics"),
+      "14710391": OECProduct("14710391", "Rubies, Sapphires and Emeralds", "luxury"),
+      "18902150": OECProduct("18902150", "Pacemakers", "healthcare"),
+      "18900130": OECProduct("18900130", "Contact Lenses", "healthcare"),
+      "2080810": OECProduct("2080810", "Apples", "agriculture"),
+      "18901320": OECProduct("18901320", "Lasers", "electronics"),
+      "4160100": OECProduct("4160100", "Sausages", "food"),
+      "2080440": OECProduct("2080440", "Avocados", "agriculture"),
+      "16851671": OECProduct("16851671", "Electric Coffee and Tea Makers", "electronics"),
+      "6300431": OECProduct("6300431", "Insulin", "healthcare"),
+      "1040510": OECProduct("1040510", "Butter", "food"),
+      "18900410": OECProduct("18900410", "Sunglasses", "accessories"),
+      "6380892": OECProduct("6380892", "Fungicides", "chemicals"),
+      "17870892": OECProduct("17870892", "Mufflers and Exhaust Pipes", "automotive"),
+      "17871120": OECProduct("17871120", "Motorcycles", "transportation"),
+      "3151110": OECProduct("3151110", "Palm Oil", "food"),
+      "4220830": OECProduct("4220830", "Whiskies", "beverages"),
+      "11520100": OECProduct("11520100", "Cotton", "materials"),
   }
 
   def __init__(self):
@@ -170,13 +252,14 @@ class OECClient:
     country_list = ",".join(self.COUNTRIES.keys())
 
     # Construct API URL
+    product_depth = "HS6" if len(product_id) > 6 else "HS4"
     url = (
         f"{self.BASE_URL}?"
         f"cube=trade_i_baci_a_22&"
         f"locale=en&"
-        f"drilldowns=HS4,Exporter+Country,Year&"
+        f"drilldowns={product_depth},Exporter+Country,Year&"
         f"measures=Trade+Value&"
-        f"include=HS4:{product_id};"
+        f"include={product_depth}:{product_id};"
         f"Exporter+Country:{country_list};"
         f"Year:2023"
     )
