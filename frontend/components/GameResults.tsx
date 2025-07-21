@@ -74,7 +74,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
             oldElo: eloData.oldElo,
             newElo: eloData.newElo,
             eloChange: eloData.newElo - eloData.oldElo,
-            totalgames: totalGames,
+            totalGames: totalGames,
             wins: wins,
             losses: losses,
             draws: draws
