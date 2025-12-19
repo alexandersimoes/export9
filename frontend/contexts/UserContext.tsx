@@ -57,6 +57,18 @@ export function UserProvider({ children }: UserProviderProps) {
     initializeUserState()
   }, [])
 
+  const buildGuestDataFromUser = (userData: User): GuestEloData => ({
+    elo_rating: userData.elo_rating,
+    games_played: userData.games_played,
+    wins: userData.wins,
+    losses: userData.losses,
+    draws: userData.draws,
+    username: userData.username,
+    display_name: userData.display_name,
+    created_at: (userData as any).created_at || new Date().toISOString(),
+    last_played: (userData as any).last_played || new Date().toISOString()
+  })
+
   const initializeUserState = async () => {
     setIsLoading(true)
     
@@ -73,9 +85,10 @@ export function UserProvider({ children }: UserProviderProps) {
           setUser(userData)
           
           if (userData.is_guest) {
-            // Also load guest ELO data
-            const localGuestData = getGuestEloData()
-            setGuestData(localGuestData)
+            // Sync guest data from backend for accuracy
+            const guestData = buildGuestDataFromUser(userData)
+            setGuestData(guestData)
+            localStorage.setItem('export9_guest_elo', JSON.stringify(guestData))
           }
         } else {
           // User not found, clear stored data
@@ -111,6 +124,9 @@ export function UserProvider({ children }: UserProviderProps) {
         setUser(userData)
         localStorage.setItem('export9_user_id', userData.id.toString())
         localStorage.setItem('export9_is_guest', 'true')
+        const syncedGuestData = buildGuestDataFromUser(userData)
+        setGuestData(syncedGuestData)
+        localStorage.setItem('export9_guest_elo', JSON.stringify(syncedGuestData))
       }
     } catch (error) {
       console.error('Failed to create guest user from local data:', error)
@@ -214,6 +230,36 @@ export function UserProvider({ children }: UserProviderProps) {
     setIsLoading(true)
     
     try {
+      if (user && user.is_guest) {
+        return true
+      }
+
+      const storedUserId = localStorage.getItem('export9_user_id')
+      const storedIsGuest = localStorage.getItem('export9_is_guest') === 'true'
+
+      if (storedUserId && storedIsGuest) {
+        const response = await fetch(`${getApiUrl()}/api/users/${storedUserId}`)
+        if (response.ok) {
+          const userData = await response.json()
+          setUser(userData)
+
+          const guestData: GuestEloData = {
+            elo_rating: userData.elo_rating,
+            games_played: userData.games_played,
+            wins: userData.wins,
+            losses: userData.losses,
+            draws: userData.draws,
+            username: userData.username,
+            display_name: userData.display_name,
+            created_at: userData.created_at || new Date().toISOString(),
+            last_played: userData.last_played || new Date().toISOString()
+          }
+          setGuestData(guestData)
+          localStorage.setItem('export9_guest_elo', JSON.stringify(guestData))
+          return true
+        }
+      }
+
       // Create guest user on backend
       const response = await fetch(`${getApiUrl()}/api/users/guest`, {
         method: 'POST',
@@ -225,9 +271,10 @@ export function UserProvider({ children }: UserProviderProps) {
         const userData = await response.json()
         setUser(userData)
         
-        // Initialize guest ELO data locally
-        const guestData = initializeGuestElo(userData.username, userData.display_name)
+        // Initialize guest ELO data from backend response
+        const guestData = buildGuestDataFromUser(userData)
         setGuestData(guestData)
+        localStorage.setItem('export9_guest_elo', JSON.stringify(guestData))
         
         // Initialize geolocation tracking for new guest users
         initializeUserGeolocation().catch(error => 

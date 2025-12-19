@@ -144,7 +144,8 @@ export function useSocket(): UseSocketReturn {
           score: p.score,
           user_id: p.user_id,
           elo_rating: p.elo_rating,
-          is_cpu: p.is_cpu
+          is_cpu: p.is_cpu,
+          is_guest: p.is_guest
         })),
         lastRoundResult: data
       } : null)

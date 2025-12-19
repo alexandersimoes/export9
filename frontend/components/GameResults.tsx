@@ -32,14 +32,21 @@ export default function GameResults({ gameState, playerName, playerId, userId }:
   const gameResultId = `${gameState.game_id}-${userId}-${gameState.players.map(p => p.score).join('-')}`
   
   const hasPlayerId = Boolean(playerId)
-  const currentPlayer = hasPlayerId
+  const currentPlayerById = hasPlayerId
     ? gameState.players.find(p => p.id === playerId)
-    : gameState.players.find(p => p.name === playerName)
+    : undefined
+  const currentPlayerByUserId = user?.id
+    ? gameState.players.find(p => p.user_id === user.id)
+    : undefined
+  const currentPlayer = currentPlayerById || currentPlayerByUserId ||
+    gameState.players.find(p => p.name === playerName)
   const opponent = gameState.players.find(p => p.id !== currentPlayer?.id) ||
+    gameState.players.find(p => p.user_id && p.user_id !== user?.id) ||
     gameState.players.find(p => p.name !== playerName)
   
   const isWinner = !!(currentPlayer && opponent && currentPlayer.score > opponent.score)
   const isDraw = !!(currentPlayer && opponent && currentPlayer.score === opponent.score)
+  const isForfeit = !!(gameState.gameEndedEarly && gameState.forfeitReason === 'opponent_disconnected')
 
   // Save score to OEC API for authenticated users
   const saveScoreToOEC = async (won: boolean, userId: string, gameScores: { playerScore: number, opponentScore: number }, eloData: { oldElo: number, newElo: number }, opponentData: any) => {
@@ -92,6 +99,49 @@ export default function GameResults({ gameState, playerName, playerId, userId }:
     }
   }
 
+  const saveForfeitLossToOEC = async (loserUserId: string, winnerUserId: string, loserElo: number | undefined, opponentData: any) => {
+    try {
+      const oldElo = loserElo || 1200
+      const kFactor = 32
+      const expectedScore = 0.5
+      const actualScore = 0
+      const eloChange = Math.round(kFactor * (actualScore - expectedScore))
+      const newElo = Math.max(100, Math.min(3000, oldElo + eloChange))
+
+      await fetch('https://oec.world/api/games/score', {
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+        body: JSON.stringify({
+          game: 'export-holdem',
+          meta: {
+            user: {},
+            userId: loserUserId,
+            opponent: opponentData
+          },
+          answer: {
+            playerScore: 0,
+            opponentScore: 9,
+          },
+          submission: {
+            oldElo: oldElo,
+            newElo: newElo,
+            eloChange: newElo - oldElo,
+            totalGames: 1,
+            wins: 0,
+            losses: 1,
+            draws: 0
+          },
+          won: false,
+        }),
+      })
+    } catch (error) {
+      console.error('Error saving forfeit loss to OEC:', error)
+    }
+  }
+
   // Handle game end for OEC authenticated users (localStorage only)
   const handleOECUserGameEnd = async (currentPlayer: any, opponent: any, isWinner: boolean, isDraw: boolean, alreadySavedToOEC: boolean, oecSavedGames: string[]) => {
     if (!currentPlayer || !opponent) return
@@ -125,12 +175,18 @@ export default function GameResults({ gameState, playerName, playerId, userId }:
     
     // Create game history entry
     const isGameDraw = currentPlayer.score === opponent.score
+    const opponentMeta = {
+      userId: opponent?.user_id || null,
+      name: opponent?.name || '',
+      isGuest: opponent?.is_guest ?? null
+    }
+
     const gameHistoryEntry = {
       game: 'export-holdem',
       meta: {
         user: getStoredGeolocationData(),
         userId: user?.id,
-        opponent: 'cpu' // Most games are vs CPU
+        opponent: opponentMeta
       },
       answer: {
         playerScore: currentPlayer.score,
@@ -173,7 +229,7 @@ export default function GameResults({ gameState, playerName, playerId, userId }:
       localStorage.setItem('export9_oec_saved_games', JSON.stringify(trimmedOecSavedGames))
       
       // Save to OEC API
-      await saveScoreToOEC(isWinner, user?.id || '', gameScores, eloData, 'cpu')
+      await saveScoreToOEC(isWinner, user?.id || '', gameScores, eloData, opponentMeta)
       console.log('OEC score saved for game:', gameResultId)
     }
   }
@@ -200,17 +256,39 @@ export default function GameResults({ gameState, playerName, playerId, userId }:
       try {
         if (!isGuest) {
           // OEC authenticated users: only update localStorage, don't use backend database
-          await handleOECUserGameEnd(currentPlayer, opponent, isWinner, isDraw, alreadySavedToOEC, oecSavedGames)
+          if (isForfeit && isWinner && currentPlayer && opponent) {
+            await handleOECUserGameEnd(currentPlayer, opponent, isWinner, isDraw, alreadySavedToOEC, oecSavedGames)
+
+            const opponentUserId = (opponent as any)?.user_id
+            const opponentRecordId = `${gameResultId}-opponent`
+            const alreadySavedOpponent = oecSavedGames.includes(opponentRecordId)
+
+            const opponentIsOec = opponent.is_guest === false
+            if (opponentUserId && opponentIsOec && !alreadySavedOpponent) {
+              const opponentMeta = {
+                userId: user?.id || null,
+                name: currentPlayer?.name || '',
+                isGuest: currentPlayer?.is_guest ?? null
+              }
+              await saveForfeitLossToOEC(opponentUserId, user?.id || '', opponent.elo_rating, opponentMeta)
+              const updatedOecSavedGames = [...oecSavedGames, opponentRecordId]
+              const trimmedOecSavedGames = updatedOecSavedGames.slice(-50)
+              localStorage.setItem('export9_oec_saved_games', JSON.stringify(trimmedOecSavedGames))
+            }
+          } else {
+            await handleOECUserGameEnd(currentPlayer, opponent, isWinner, isDraw, alreadySavedToOEC, oecSavedGames)
+          }
         } else {
           // Guest users: use backend API system
           const opponentUser = gameState.players.find(p => p.id !== currentPlayer?.id) ||
+            gameState.players.find(p => p.user_id && p.user_id !== user?.id) ||
             gameState.players.find(p => p.name !== playerName)
 
           const gameResults = {
             player1_id: user.id,
             player2_id: (opponentUser as any)?.user_id || 'cpu',
-            player1_score: currentPlayer.score,
-            player2_score: opponent.score
+            player1_score: currentPlayer?.score ?? 0,
+            player2_score: opponent?.score ?? 0
           }
           
           const apiUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://export9.oec.world'

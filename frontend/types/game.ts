@@ -22,6 +22,7 @@ export interface Player {
   is_cpu?: boolean;
   elo_rating?: number;
   user_id?: string;
+  is_guest?: boolean;
 }
 
 export interface GameState {
@@ -54,6 +55,7 @@ export interface RoundResult {
     elo_rating?: number;
     is_cpu?: boolean;
     user_id?: string;
+    is_guest?: boolean;
     card_played?: {
       country_code: string;
       country_name: string;
@@ -72,6 +74,7 @@ export interface GameEndResult {
     elo_rating?: number;
     is_cpu?: boolean;
     user_id?: string;
+    is_guest?: boolean;
   }>;
 }
 
