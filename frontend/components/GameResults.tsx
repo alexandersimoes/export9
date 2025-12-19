@@ -11,6 +11,7 @@ import { getStoredGeolocationData } from '@/lib/geolocation'
 interface GameResultsProps {
   gameState: GameState
   playerName: string
+  playerId: string
   userId: string
 }
 
@@ -19,7 +20,7 @@ interface EloChange {
   newElo: number
 }
 
-export default function GameResults({ gameState, playerName, userId }: GameResultsProps) {
+export default function GameResults({ gameState, playerName, playerId, userId }: GameResultsProps) {
   const router = useRouter()
   const { user, isGuest, refreshUser, refreshGuestData } = useUser()
   const session: OECSession = useOECSession()
@@ -30,8 +31,12 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
   // Use game ID + user ID + player scores as unique identifier to prevent duplicate processing
   const gameResultId = `${gameState.game_id}-${userId}-${gameState.players.map(p => p.score).join('-')}`
   
-  const currentPlayer = gameState.players.find(p => p.name === playerName)
-  const opponent = gameState.players.find(p => p.name !== playerName)
+  const hasPlayerId = Boolean(playerId)
+  const currentPlayer = hasPlayerId
+    ? gameState.players.find(p => p.id === playerId)
+    : gameState.players.find(p => p.name === playerName)
+  const opponent = gameState.players.find(p => p.id !== currentPlayer?.id) ||
+    gameState.players.find(p => p.name !== playerName)
   
   const isWinner = !!(currentPlayer && opponent && currentPlayer.score > opponent.score)
   const isDraw = !!(currentPlayer && opponent && currentPlayer.score === opponent.score)
@@ -198,11 +203,12 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
           await handleOECUserGameEnd(currentPlayer, opponent, isWinner, isDraw, alreadySavedToOEC, oecSavedGames)
         } else {
           // Guest users: use backend API system
-          const opponentUser = gameState.players.find(p => p.name !== playerName)
+          const opponentUser = gameState.players.find(p => p.id !== currentPlayer?.id) ||
+            gameState.players.find(p => p.name !== playerName)
 
           const gameResults = {
             player1_id: user.id,
-            player2_id: (opponentUser as any).user_id || 'cpu',
+            player2_id: (opponentUser as any)?.user_id || 'cpu',
             player1_score: currentPlayer.score,
             player2_score: opponent.score
           }
@@ -243,7 +249,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
     }
 
     processEloChanges()
-  }, [user, currentPlayer, opponent, isGuest, playerName, gameState.players, refreshUser, refreshGuestData, gameResultId])
+  }, [user, currentPlayer, opponent, isGuest, playerName, playerId, gameState.players, refreshUser, refreshGuestData, gameResultId])
   
   const handlePlayAgain = () => {
     router.push('/')
@@ -302,8 +308,8 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
                       key={player.id} 
                       className="flex justify-between items-center p-2 md:p-4 rounded-lg border-2"
                       style={{
-                        backgroundColor: player.name === playerName ? '#fff7e6' : '#f9f7f4',
-                        borderColor: player.name === playerName ? 'var(--poker-accent)' : '#d4b896'
+                        backgroundColor: player.id === currentPlayer?.id ? '#fff7e6' : '#f9f7f4',
+                        borderColor: player.id === currentPlayer?.id ? 'var(--poker-accent)' : '#d4b896'
                       }}
                     >
                       <div className="flex items-center space-x-3">
@@ -313,7 +319,7 @@ export default function GameResults({ gameState, playerName, userId }: GameResul
                         <div className="text-left">
                           <div className="font-bold text-lg" style={{ color: 'var(--poker-dark-text)', lineHeight: '1.2' }}>
                             {player.name}
-                            {player.name === playerName && <span className="ml-2" style={{ color: 'var(--poker-accent)' }}>(You)</span>}
+                            {player.id === currentPlayer?.id && <span className="ml-2" style={{ color: 'var(--poker-accent)' }}>(You)</span>}
                           </div>
                           <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
                             {isTie ? 'Draw' : (isWinner ? 'Winner' : '2nd Place')}

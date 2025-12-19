@@ -14,7 +14,7 @@ function GamePageContent() {
   const searchParams = useSearchParams()
   const { user, isLoading } = useUser()
   
-  const { gameState, gameStatus, error, joinGame, playCard, playCPU, quitGame, reconnect } = useSocket()
+  const { gameState, gameStatus, error, joinGame, playCard, playCPU, quitGame, reconnect, playerId } = useSocket()
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -61,6 +61,7 @@ function GamePageContent() {
       <GameResults 
         gameState={gameState}
         playerName={user?.display_name || ''}
+        playerId={playerId || ''}
         userId={user?.id || ''}
       />
     )
@@ -73,6 +74,7 @@ function GamePageContent() {
         gameState={gameState}
         gameStatus={gameStatus}
         playerName={user?.display_name || ''}
+        playerId={playerId || ''}
         onPlayCard={playCard}
         onQuitGame={quitGame}
         error={error}

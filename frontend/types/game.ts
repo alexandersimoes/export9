@@ -21,6 +21,7 @@ export interface Player {
   cards_remaining?: number;
   is_cpu?: boolean;
   elo_rating?: number;
+  user_id?: string;
 }
 
 export interface GameState {
@@ -50,6 +51,9 @@ export interface RoundResult {
     name: string;
     score: number;
     is_round_winner: boolean;
+    elo_rating?: number;
+    is_cpu?: boolean;
+    user_id?: string;
     card_played?: {
       country_code: string;
       country_name: string;
@@ -65,6 +69,9 @@ export interface GameEndResult {
     id: string;
     name: string;
     score: number;
+    elo_rating?: number;
+    is_cpu?: boolean;
+    user_id?: string;
   }>;
 }
 

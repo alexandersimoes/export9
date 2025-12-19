@@ -14,6 +14,7 @@ interface GameBoardProps {
   gameState: GameState
   gameStatus: GameStatus
   playerName: string
+  playerId: string
   onPlayCard: (countryCode: string) => void
   onQuitGame: () => void
   error: string | null
@@ -23,6 +24,7 @@ export default function GameBoard({
   gameState, 
   gameStatus, 
   playerName, 
+  playerId,
   onPlayCard, 
   onQuitGame,
   error 
@@ -103,12 +105,14 @@ export default function GameBoard({
     }
   }
 
-  const currentPlayer = gameState.players.find(p => p.name === playerName)
-  const opponent = gameState.players.find(p => p.name !== playerName)
+  const currentPlayer = gameState.players.find(p => p.id === playerId) ||
+    gameState.players.find(p => p.name === playerName)
+  const opponent = gameState.players.find(p => p.id !== currentPlayer?.id) ||
+    gameState.players.find(p => p.name !== playerName)
 
   // Helper function to get player flag
   const getPlayerFlag = (player: any) => {
-    if (player.name === playerName) {
+    if (player.id === currentPlayer?.id || player.name === playerName) {
       // For current player, use their geolocation data
       const userCountryCode = getUserCountryCode()
       return userCountryCode ? getFlagEmoji(userCountryCode) : '🌐'
@@ -246,8 +250,10 @@ export default function GameBoard({
       }}>
         <div className="flex items-center justify-between px-2">
           {(() => {
-            const currentPlayer = gameState.players.find(p => p.name === playerName)
-            const opponent = gameState.players.find(p => p.name !== playerName)
+            const currentPlayer = gameState.players.find(p => p.id === playerId) ||
+              gameState.players.find(p => p.name === playerName)
+            const opponent = gameState.players.find(p => p.id !== currentPlayer?.id) ||
+              gameState.players.find(p => p.name !== playerName)
             
             if (!currentPlayer || !opponent) {
               // Fallback for edge cases
@@ -259,9 +265,9 @@ export default function GameBoard({
                   <div className="min-w-0">
                     <div className="font-semibold text-xs sm:text-sm truncate" style={{ color: 'var(--poker-dark-text)' }}>
                       {player.name}
-                      {player.name === playerName && <span className="ml-1 opacity-75">(You)</span>}
+                      {(player.id === currentPlayer?.id || player.name === playerName) && <span className="ml-1 opacity-75">(You)</span>}
                     </div>
-                    {player.name === playerName && user && (
+                    {(player.id === currentPlayer?.id || player.name === playerName) && user && (
                     <div 
                       className="w-3 h-3 sm:w-4 sm:h-4 rounded-full flex-shrink-0"
                       style={{ backgroundColor: getEloColor(user.elo_rating) }}
@@ -526,6 +532,7 @@ export default function GameBoard({
         <RoundResultModal
           roundResult={gameState.lastRoundResult}
           playerName={playerName}
+          playerId={playerId}
           currentProduct={gameState.current_product}
         />
       )}
@@ -533,4 +540,3 @@ export default function GameBoard({
     </div>
   )
 }
-

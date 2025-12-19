@@ -9,10 +9,11 @@ const TIME_BETWEEN_ROUNDS = 5
 interface RoundResultModalProps {
   roundResult: RoundResult | null
   playerName: string
+  playerId: string
   currentProduct?: Product
 }
 
-export default function RoundResultModal({ roundResult, playerName, currentProduct }: RoundResultModalProps) {
+export default function RoundResultModal({ roundResult, playerName, playerId, currentProduct }: RoundResultModalProps) {
   const [timeLeft, setTimeLeft] = useState(TIME_BETWEEN_ROUNDS)
 
   useEffect(() => {
@@ -36,7 +37,10 @@ export default function RoundResultModal({ roundResult, playerName, currentProdu
 
   if (!roundResult) return null
 
-  const currentPlayer = roundResult.players.find(p => p.name === playerName)
+  const hasPlayerId = Boolean(playerId)
+  const currentPlayer = hasPlayerId
+    ? roundResult.players.find(p => p.id === playerId)
+    : roundResult.players.find(p => p.name === playerName)
   const isWinner = currentPlayer?.is_round_winner || false
   const isTie = roundResult.is_tie
 
@@ -97,8 +101,10 @@ export default function RoundResultModal({ roundResult, playerName, currentProdu
           <div className="space-y-4 mb-6">
             {(() => {
               // Always show current player first, then other players
-              const currentPlayerData = roundResult.players.find(p => p.name === playerName)
-              const otherPlayers = roundResult.players.filter(p => p.name !== playerName)
+              const currentPlayerData = hasPlayerId
+                ? roundResult.players.find(p => p.id === playerId)
+                : roundResult.players.find(p => p.name === playerName)
+              const otherPlayers = roundResult.players.filter(p => p.id !== currentPlayerData?.id)
               const orderedPlayers = currentPlayerData ? [currentPlayerData, ...otherPlayers] : roundResult.players
               
               return orderedPlayers.map((player) => (
@@ -113,7 +119,7 @@ export default function RoundResultModal({ roundResult, playerName, currentProdu
                   <div className="flex justify-between items-center">
                     <div className="text-left">
                       <div className="font-semibold" style={{ color: 'var(--poker-dark-text)' }}>
-                        {player.name} {player.name === playerName && '(You)'}
+                        {player.name} {player.id === currentPlayerData?.id && '(You)'}
                         {player.is_round_winner && (isTie ? ' 🤝' : ' 🏆')}
                       </div>
                       {player.card_played && (
@@ -148,15 +154,17 @@ export default function RoundResultModal({ roundResult, playerName, currentProdu
             <div className="grid grid-cols-2 gap-4">
               {(() => {
                 // Always show current player first, then other players
-                const currentPlayerData = roundResult.players.find(p => p.name === playerName)
-                const otherPlayers = roundResult.players.filter(p => p.name !== playerName)
+                const currentPlayerData = hasPlayerId
+                  ? roundResult.players.find(p => p.id === playerId)
+                  : roundResult.players.find(p => p.name === playerName)
+                const otherPlayers = roundResult.players.filter(p => p.id !== currentPlayerData?.id)
                 const orderedPlayers = currentPlayerData ? [currentPlayerData, ...otherPlayers] : roundResult.players
                 
                 return orderedPlayers.map((player) => (
                   <div key={player.id} className="text-center">
                     <div className="font-semibold" style={{ color: 'var(--poker-dark-text)', lineHeight: '1.2' }}>
                       {player.name}
-                      {player.name === playerName && ' (You)'}
+                      {player.id === currentPlayerData?.id && ' (You)'}
                       {player.is_round_winner && (
                         <span className="text-sm ml-1" style={{ color: 'var(--poker-accent)' }}>+1</span>
                       )}

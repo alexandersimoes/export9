@@ -31,14 +31,14 @@ sudo su - exportgame
 
 ### Install Node.js 18+ using NodeSource repository
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 ```
 
 ### Verify installation
 ```bash
-node --version  # Should show v18+
-npm --version
+node --version  # Should show v20+
+npm --version # Should show v10+
 ```
 
 ## Step 3: Install Python
@@ -50,7 +50,7 @@ sudo apt install -y python3 python3-pip python3-venv python3-dev
 
 ### Verify installation
 ```bash
-python3 --version  # Should show 3.8+
+python3 --version  # Should show 3.12+
 pip3 --version
 ```
 
@@ -91,7 +91,7 @@ pm2 startup
 
 ### Clone the repository
 ```bash
-cd /home/exportgame  # or your preferred directory
+cd /home/export-holdem  # or your preferred directory
 git clone https://github.com/alexandersimoes/export9.git
 cd export9
 ```
@@ -171,7 +171,7 @@ Add the following:
 module.exports = {
   apps: [
     {
-      name: 'export-game-backend',
+      name: 'export-holdem-backend',
       script: 'main.py',
       cwd: './backend',
       interpreter: './backend/venv/bin/python',
@@ -188,7 +188,7 @@ module.exports = {
       time: true
     },
     {
-      name: 'export-game-frontend',
+      name: 'export-holdem-frontend',
       script: 'npm',
       args: 'start',
       cwd: './frontend',
@@ -228,7 +228,7 @@ pm2 save
 
 ### Create Nginx configuration
 ```bash
-sudo nano /etc/nginx/sites-available/export-game
+sudo nano /etc/nginx/sites-available/export-holdem
 ```
 
 Add the following configuration:
@@ -284,7 +284,7 @@ server {
 
 ### Enable the site
 ```bash
-sudo ln -s /etc/nginx/sites-available/export-game /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/export-holdem /etc/nginx/sites-enabled/
 ```
 
 ### Remove default site (optional)

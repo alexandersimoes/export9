@@ -10,6 +10,7 @@ interface UseSocketReturn {
   gameState: GameState | null
   gameStatus: GameStatus
   error: string | null
+  playerId: string | null
   joinGame: (playerName: string, userId?: string, roomCode?: string) => void
   playCard: (countryCode: string) => void
   playCPU: () => void
@@ -22,6 +23,7 @@ export function useSocket(): UseSocketReturn {
   const [gameState, setGameState] = useState<GameState | null>(null)
   const [gameStatus, setGameStatus] = useState<GameStatus>('connecting')
   const [error, setError] = useState<string | null>(null)
+  const [playerId, setPlayerId] = useState<string | null>(null)
 
   useEffect(() => {
     // Initialize socket connection
@@ -78,6 +80,9 @@ export function useSocket(): UseSocketReturn {
 
     socket.on('player_created', (data) => {
       console.log('Player created:', data)
+      if (data?.player_id) {
+        setPlayerId(data.player_id)
+      }
       // Check if this is a private room
       if (data.status === 'waiting_for_friend') {
         setGameStatus('waiting_for_friend')
@@ -136,7 +141,10 @@ export function useSocket(): UseSocketReturn {
         players: data.players.map(p => ({
           id: p.id,
           name: p.name,
-          score: p.score
+          score: p.score,
+          user_id: p.user_id,
+          elo_rating: p.elo_rating,
+          is_cpu: p.is_cpu
         })),
         lastRoundResult: data
       } : null)
@@ -241,6 +249,7 @@ export function useSocket(): UseSocketReturn {
       setGameState(null)
       setGameStatus('connecting')
       setError(null)
+      setPlayerId(null)
     }
   }
 
@@ -255,6 +264,7 @@ export function useSocket(): UseSocketReturn {
     gameState,
     gameStatus,
     error,
+    playerId,
     joinGame,
     playCard,
     playCPU,
