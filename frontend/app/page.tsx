@@ -14,6 +14,7 @@ function HomeContent() {
   const { user, isLoading, refreshUser } = useUser()
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showPrivateRoomModal, setShowPrivateRoomModal] = useState(false)
+  const [activePlayers, setActivePlayers] = useState<number | null>(null)
   const router = useRouter()
 
   // Check for room query parameter and redirect
@@ -34,6 +35,36 @@ function HomeContent() {
       setShowOnboarding(true)
     }
   }, [user, isLoading])
+
+  useEffect(() => {
+    let isMounted = true
+    const apiUrl = process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://export9.oec.world'
+
+    const loadActivePlayers = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/health`, { cache: 'no-store' })
+        if (!response.ok) {
+          return
+        }
+        const data = await response.json()
+        const activeGames = Number(data?.active_games || 0)
+        const players = activeGames * 2
+        if (isMounted) {
+          setActivePlayers(players)
+        }
+      } catch (error) {
+        // Ignore transient failures, keep last known value.
+      }
+    }
+
+    loadActivePlayers()
+    const intervalId = setInterval(loadActivePlayers, 10000)
+
+    return () => {
+      isMounted = false
+      clearInterval(intervalId)
+    }
+  }, [])
 
   const handleJoinGame = () => {
     if (user) {
@@ -71,7 +102,16 @@ function HomeContent() {
       
       {!showOnboarding && (
         <div className="poker-table flex items-center justify-center p-2">
-        <div className="card w-full max-w-[800px] mx-2 md:mx-4">
+        <div className="card w-full max-w-[800px] mx-2 md:mx-4 relative">
+          {activePlayers !== null && activePlayers > 2 && (
+            <div className="absolute top-3 right-3 flex items-center gap-2 rounded-full bg-white/80 px-2 py-1 shadow-sm">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-700"></span>
+              </span>
+              <span className="text-xs font-semibold text-poker-dark-text">{activePlayers} playing</span>
+            </div>
+          )}
           <div className="text-center mb-8">
             {/* Logo */}
             <div className="flex justify-center mb-3">

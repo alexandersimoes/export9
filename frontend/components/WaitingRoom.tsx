@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { GameStatus } from '@/types/game'
 import { getFlagEmoji } from '@/lib/utils'
 import HowToPlayInstructions from './HowToPlayInstructions'
@@ -14,6 +15,7 @@ interface WaitingRoomProps {
 export default function WaitingRoom({ playerName, status, onPlayCPU }: WaitingRoomProps) {
   const [waitTime, setWaitTime] = useState(10)
   const [showCPUOption, setShowCPUOption] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     if (status === 'waiting_for_opponent') {
@@ -79,10 +81,10 @@ export default function WaitingRoom({ playerName, status, onPlayCPU }: WaitingRo
                       🤖 Play vs CPU
                     </button>
                     <button
-                      onClick={() => setShowCPUOption(false)}
+                      onClick={() => router.push('/')}
                       className="btn-secondary"
                     >
-                      Keep Waiting
+                      Return Home
                     </button>
                   </div>
                 </div>
