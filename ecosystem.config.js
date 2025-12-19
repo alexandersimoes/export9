@@ -1,10 +1,10 @@
 module.exports = {
   apps: [
     {
-      name: 'export-game-backend',
+      name: 'export-holdem-backend',
       script: 'main.py',
-      cwd: '/home/deploy/export9/backend',
-      interpreter: '/home/deploy/export9/backend/venv/bin/python',
+      cwd: '/home/deploy/export-holdem/backend',
+      interpreter: '/home/deploy/export-holdem/backend/venv/bin/python',
       env: {
         NODE_ENV: 'production'
       },
@@ -18,7 +18,7 @@ module.exports = {
       time: true
     },
     {
-      name: 'export-game-frontend',
+      name: 'export-holdem-frontend',
       script: 'npm',
       args: 'start',
       cwd: './frontend',
