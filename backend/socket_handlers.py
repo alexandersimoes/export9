@@ -67,6 +67,14 @@ async def check_player_timeouts(sio: socketio.AsyncServer, game_manager: GameMan
             except Exception as forfeit_error:
               logger.error(f"Error handling forfeit for game {game.id}: {forfeit_error}")
             break  # Only handle one forfeit per game per check cycle
+        elif not active_players:
+          # All human players are disconnected; clean up stale game.
+          logger.warning(f"Cleaning up game {game.id} with no active human players")
+          for player in game.players:
+            if player.id in game_manager.player_game_map:
+              del game_manager.player_game_map[player.id]
+          if game.id in game_manager.games:
+            del game_manager.games[game.id]
       
     except Exception as e:
       logger.error(f"Error in timeout check loop: {e}")
