@@ -125,7 +125,7 @@ export default function RoundResultModal({ roundResult, playerName, playerId, cu
                       {player.card_played && (
                         <div className="text-sm" style={{ color: 'var(--poker-dark-text)', opacity: 0.7 }}>
                           {getFlagEmoji(player.card_played.country_code)} {player.card_played.country_name}
-                          {player.card_played.country_code === roundResult.winner_country && ' (Winning choice!)'}
+                          {player.is_round_winner && ' (Winning choice!)'}
                         </div>
                       )}
                     </div>

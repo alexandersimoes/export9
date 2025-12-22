@@ -615,20 +615,29 @@ async def resolve_round(sio: socketio.AsyncServer, game_manager: GameManager, ga
     logger.info(
         f"{player_type} ({player.name}) played {card.country.code} with {export_value:.2f}B exports for {current_round.product.name}")
 
-  # Determine winner(s) - handle ties when both players pick same country
-  winner_country = max(current_round.export_data, key=current_round.export_data.get)
-  winner_export_value = current_round.export_data[winner_country]
-  logger.info(f"Winning country: {winner_country} with {winner_export_value:.2f}B exports")
-
-  winner_player_ids = []
-
-  # Find all players who played the winning country
+  # Determine winner(s) - handle ties when export values are equal
+  player_export_values = {}
   for player_id, card in current_round.player_cards.items():
-    if card.country.code == winner_country:
-      winner_player_ids.append(player_id)
-      player = game.get_player_by_id(player_id)
-      player_type = "CPU" if player.is_cpu else "Human"
-      logger.info(f"{player_type} ({player.name}) wins this round with {winner_country}")
+    player_export_values[player_id] = current_round.export_data.get(card.country.code, 0)
+
+  if not player_export_values:
+    return
+
+  max_export_value = max(player_export_values.values())
+  winner_player_ids = [player_id for player_id, value in player_export_values.items()
+                       if value == max_export_value]
+
+  winner_country = ""
+  if len(winner_player_ids) == 1:
+    winner_country = current_round.player_cards[winner_player_ids[0]].country.code
+
+  logger.info(f"Winning export value: {max_export_value:.2f}B exports")
+
+  for player_id in winner_player_ids:
+    player = game.get_player_by_id(player_id)
+    player_type = "CPU" if player.is_cpu else "Human"
+    player_country = current_round.player_cards[player_id].country.code
+    logger.info(f"{player_type} ({player.name}) wins this round with {player_country}")
 
   # Award points to all winners (handles ties)
   for winner_id in winner_player_ids:
