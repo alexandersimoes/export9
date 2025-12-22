@@ -506,7 +506,7 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
 async def start_round(sio: socketio.AsyncServer, game_manager: GameManager, game_id: str, round_number: int):
   """Start a new round"""
   game = game_manager.games.get(game_id)
-  if not game:
+  if not game or game.state != GameState.IN_PROGRESS:
     return
 
   game.current_round = round_number
@@ -601,7 +601,7 @@ async def cpu_auto_play(sio: socketio.AsyncServer, game_manager: GameManager, ga
 async def resolve_round(sio: socketio.AsyncServer, game_manager: GameManager, game_id: str):
   """Resolve the current round and determine winner"""
   game = game_manager.games.get(game_id)
-  if not game:
+  if not game or game.state != GameState.IN_PROGRESS:
     return
 
   current_round = game.rounds[game.current_round - 1]
@@ -686,12 +686,14 @@ async def resolve_round(sio: socketio.AsyncServer, game_manager: GameManager, ga
     # Give players time to see final round results before ending game
     import asyncio
     await asyncio.sleep(5)
-    await end_game(sio, game_manager, game_id)
+    if game.state == GameState.IN_PROGRESS:
+      await end_game(sio, game_manager, game_id)
   else:
     # Start next round after showing results for 5 seconds
     import asyncio
     await asyncio.sleep(5)
-    await start_round(sio, game_manager, game_id, game.current_round + 1)
+    if game.state == GameState.IN_PROGRESS:
+      await start_round(sio, game_manager, game_id, game.current_round + 1)
 
 
 async def handle_game_forfeit(sio: socketio.AsyncServer, game_manager: GameManager, game_id: str, forfeiting_player_id: str, winning_player_id: str):

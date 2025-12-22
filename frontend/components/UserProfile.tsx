@@ -15,11 +15,11 @@ export default function UserProfile({ compact = false }: UserProfileProps) {
 
   if (!user) return null
 
-  const eloRating = isGuest ? (guestData?.elo_rating || 1200) : user.elo_rating
-  const gamesPlayed = isGuest ? (guestData?.games_played || 0) : user.games_played
-  const wins = isGuest ? (guestData?.wins || 0) : user.wins
-  const losses = isGuest ? (guestData?.losses || 0) : user.losses
-  const draws = isGuest ? (guestData?.draws || 0) : user.draws
+  const eloRating = isGuest ? (user.elo_rating || guestData?.elo_rating || 1200) : user.elo_rating
+  const gamesPlayed = isGuest ? (user.games_played || guestData?.games_played || 0) : user.games_played
+  const wins = isGuest ? (user.wins || guestData?.wins || 0) : user.wins
+  const losses = isGuest ? (user.losses || guestData?.losses || 0) : user.losses
+  const draws = isGuest ? (user.draws || guestData?.draws || 0) : user.draws
 
   const eloCategory = getEloCategory(eloRating)
   const eloColor = getEloColor(eloRating)
