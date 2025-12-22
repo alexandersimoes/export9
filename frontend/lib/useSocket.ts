@@ -12,6 +12,8 @@ interface UseSocketReturn {
   error: string | null
   playerId: string | null
   joinGame: (playerName: string, userId?: string, roomCode?: string) => void
+  rejoinGame: (gameId: string, playerId: string, playerName: string, userId?: string) => void
+  requestRejoin: (gameId: string, playerId: string, playerName: string, userId?: string) => void
   playCard: (countryCode: string) => void
   playCPU: () => void
   quitGame: () => void
@@ -24,6 +26,81 @@ export function useSocket(): UseSocketReturn {
   const [gameStatus, setGameStatus] = useState<GameStatus>('connecting')
   const [error, setError] = useState<string | null>(null)
   const [playerId, setPlayerId] = useState<string | null>(null)
+  const gameStatusRef = useRef<GameStatus>('connecting')
+  const playerIdRef = useRef<string | null>(null)
+  const lastUserIdRef = useRef<string | undefined>(undefined)
+  const lastPlayerNameRef = useRef<string | undefined>(undefined)
+  const pendingRejoinRef = useRef<{
+    gameId: string
+    playerId: string
+    playerName: string
+    userId?: string
+  } | null>(null)
+  const pauseTimeoutRef = useRef<number | null>(null)
+  const pauseIntervalRef = useRef<number | null>(null)
+
+  const clearPauseTimers = () => {
+    if (pauseTimeoutRef.current) {
+      window.clearTimeout(pauseTimeoutRef.current)
+      pauseTimeoutRef.current = null
+    }
+    if (pauseIntervalRef.current) {
+      window.clearInterval(pauseIntervalRef.current)
+      pauseIntervalRef.current = null
+    }
+  }
+
+  useEffect(() => {
+    gameStatusRef.current = gameStatus
+  }, [gameStatus])
+
+  const setActiveGame = (gameId: string) => {
+    const payload = {
+      game_id: gameId,
+      player_id: playerIdRef.current,
+      user_id: lastUserIdRef.current,
+      player_name: lastPlayerNameRef.current,
+      updated_at: Date.now()
+    }
+    localStorage.setItem('export9_active_game', JSON.stringify(payload))
+  }
+
+  const bumpActiveGameTimestamp = () => {
+    try {
+      const stored = localStorage.getItem('export9_active_game')
+      if (!stored) {
+        return
+      }
+      const parsed = JSON.parse(stored)
+      if (!parsed?.game_id || !parsed?.player_id) {
+        return
+      }
+      parsed.updated_at = Date.now()
+      localStorage.setItem('export9_active_game', JSON.stringify(parsed))
+    } catch (error) {
+      // Ignore localStorage parsing errors.
+    }
+  }
+
+  const clearActiveGame = () => {
+    localStorage.removeItem('export9_active_game')
+  }
+
+  const startPauseCountdown = (pauseExpiresAt: number) => {
+    clearPauseTimers()
+    const updateRemaining = () => {
+      const remaining = Math.max(0, Math.ceil((pauseExpiresAt - Date.now()) / 1000))
+      setGameState(prevState => prevState ? {
+        ...prevState,
+        is_paused: true,
+        pause_reason: 'opponent_disconnected',
+        pause_remaining: remaining
+      } : prevState)
+    }
+    setGameStatus('playing')
+    updateRemaining()
+    pauseIntervalRef.current = window.setInterval(updateRemaining, 1000)
+  }
 
   useEffect(() => {
     // Initialize socket connection
@@ -40,6 +117,17 @@ export function useSocket(): UseSocketReturn {
     socket.on('connect', () => {
       console.log('Connected to server with ID:', socket.id)
       setError(null)
+
+      if (pendingRejoinRef.current) {
+        const pending = pendingRejoinRef.current
+        socket.emit('rejoin_game', {
+          game_id: pending.gameId,
+          player_id: pending.playerId,
+          user_id: pending.userId,
+          name: pending.playerName
+        })
+        pendingRejoinRef.current = null
+      }
     })
 
     socket.on('disconnect', () => {
@@ -82,6 +170,7 @@ export function useSocket(): UseSocketReturn {
       console.log('Player created:', data)
       if (data?.player_id) {
         setPlayerId(data.player_id)
+        playerIdRef.current = data.player_id
       }
       // Check if this is a private room
       if (data.status === 'waiting_for_friend') {
@@ -107,6 +196,8 @@ export function useSocket(): UseSocketReturn {
         players: data.players,
         your_cards: data.your_cards
       })
+
+      setActiveGame(data.game_id)
     })
 
     socket.on('round_started', (data) => {
@@ -123,6 +214,8 @@ export function useSocket(): UseSocketReturn {
         your_cards: data.your_cards || prevState.your_cards, // Update with remaining cards
         lastRoundResult: undefined // Clear previous round result
       } : null)
+
+      bumpActiveGameTimestamp()
     })
 
     socket.on('card_played', (data) => {
@@ -150,6 +243,8 @@ export function useSocket(): UseSocketReturn {
         lastRoundResult: data
       } : null)
 
+      bumpActiveGameTimestamp()
+
       // Don't auto-transition - let the server control this
     })
 
@@ -162,6 +257,9 @@ export function useSocket(): UseSocketReturn {
         state: 'finished',
         players: data.final_scores
       } : null)
+
+      clearPauseTimers()
+      clearActiveGame()
     })
 
     socket.on('player_disconnected', (data) => {
@@ -190,11 +288,55 @@ export function useSocket(): UseSocketReturn {
           forfeitingPlayerName: data.forfeiting_player_name
         } : null
       })
+
+      clearPauseTimers()
+      clearActiveGame()
+    })
+
+    socket.on('opponent_disconnected', (data) => {
+      console.log('Opponent disconnected:', data)
+      const pauseExpiresAt = data?.pause_expires_at ? data.pause_expires_at * 1000 : Date.now() + 30000
+
+      if (gameStatusRef.current === 'round_ended') {
+        clearPauseTimers()
+        pauseTimeoutRef.current = window.setTimeout(() => {
+          startPauseCountdown(pauseExpiresAt)
+        }, 5000)
+        return
+      }
+
+      startPauseCountdown(pauseExpiresAt)
+    })
+
+    socket.on('opponent_reconnected', (data) => {
+      console.log('Opponent reconnected:', data)
+      clearPauseTimers()
+      setGameState(prevState => prevState ? {
+        ...prevState,
+        is_paused: false,
+        pause_reason: undefined,
+        pause_remaining: null
+      } : prevState)
     })
 
     socket.on('game_state', (data: GameState) => {
       console.log('Game state received:', data)
       setGameState(data)
+
+      if (data.is_paused && data.pause_remaining !== null && data.pause_remaining !== undefined) {
+        const pauseExpiresAt = Date.now() + data.pause_remaining * 1000
+        startPauseCountdown(pauseExpiresAt)
+      } else {
+        clearPauseTimers()
+      }
+
+      if (data.state === 'finished') {
+        setGameStatus('game_ended')
+        clearActiveGame()
+      } else if (data.state === 'in_progress' || data.state === 'paused') {
+        setGameStatus('playing')
+        bumpActiveGameTimestamp()
+      }
     })
 
     socket.on('error', (data) => {
@@ -204,11 +346,16 @@ export function useSocket(): UseSocketReturn {
         setError(data.message)
         setGameStatus('error')
       }
+
+      if (data?.message && (data.message.includes('Game not found') || data.message.includes('Player not found'))) {
+        clearActiveGame()
+      }
     })
 
     // Cleanup on unmount
     return () => {
       clearInterval(heartbeatInterval)
+      clearPauseTimers()
       window.removeEventListener('beforeunload', handleBeforeUnload)
       window.removeEventListener('pagehide', handleBeforeUnload)
       socket.disconnect()
@@ -217,11 +364,41 @@ export function useSocket(): UseSocketReturn {
 
   const joinGame = (playerName: string, userId?: string, roomCode?: string) => {
     if (socketRef.current) {
+      lastUserIdRef.current = userId
+      lastPlayerNameRef.current = playerName
       const data: any = { name: playerName, user_id: userId }
       if (roomCode) {
         data.room_code = roomCode
       }
       socketRef.current.emit('join_game', data)
+    }
+  }
+
+  const rejoinGame = (gameId: string, playerId: string, playerName: string, userId?: string) => {
+    if (socketRef.current) {
+      lastUserIdRef.current = userId
+      lastPlayerNameRef.current = playerName
+      socketRef.current.emit('rejoin_game', {
+        game_id: gameId,
+        player_id: playerId,
+        user_id: userId,
+        name: playerName
+      })
+    }
+  }
+
+  const requestRejoin = (gameId: string, playerId: string, playerName: string, userId?: string) => {
+    pendingRejoinRef.current = { gameId, playerId, playerName, userId }
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('rejoin_game', {
+        game_id: gameId,
+        player_id: playerId,
+        user_id: userId,
+        name: playerName
+      })
+      pendingRejoinRef.current = null
+    } else {
+      socketRef.current?.connect()
     }
   }
 
@@ -251,6 +428,7 @@ export function useSocket(): UseSocketReturn {
       setGameStatus('connecting')
       setError(null)
       setPlayerId(null)
+      playerIdRef.current = null
     }
   }
 
@@ -267,6 +445,8 @@ export function useSocket(): UseSocketReturn {
     error,
     playerId,
     joinGame,
+    rejoinGame,
+    requestRejoin,
     playCard,
     playCPU,
     quitGame,

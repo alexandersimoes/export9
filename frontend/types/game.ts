@@ -27,7 +27,7 @@ export interface Player {
 
 export interface GameState {
   game_id: string;
-  state: 'waiting' | 'in_progress' | 'finished';
+  state: 'waiting' | 'in_progress' | 'paused' | 'finished';
   current_round: number;
   total_rounds: number;
   current_product?: Product;
@@ -37,6 +37,9 @@ export interface GameState {
   gameEndedEarly?: boolean;
   forfeitReason?: string;
   forfeitingPlayerName?: string;
+  is_paused?: boolean;
+  pause_reason?: 'opponent_disconnected';
+  pause_remaining?: number | null;
 }
 
 export interface RoundResult {

@@ -14,7 +14,7 @@ function GamePageContent() {
   const searchParams = useSearchParams()
   const { user, isLoading } = useUser()
   
-  const { gameState, gameStatus, error, joinGame, playCard, playCPU, quitGame, reconnect, playerId } = useSocket()
+  const { gameState, gameStatus, error, joinGame, rejoinGame, requestRejoin, playCard, playCPU, quitGame, reconnect, playerId } = useSocket()
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -24,6 +24,19 @@ function GamePageContent() {
     }
     
     if (user && gameStatus === 'connecting') {
+      const storedGame = localStorage.getItem('export9_active_game')
+      if (storedGame) {
+        try {
+          const parsed = JSON.parse(storedGame)
+          if (parsed?.user_id === `${user.id}` && parsed?.game_id && parsed?.player_id) {
+            rejoinGame(parsed.game_id, parsed.player_id, user.display_name, `${user.id}`)
+            return
+          }
+        } catch (error) {
+          localStorage.removeItem('export9_active_game')
+        }
+      }
+
       const roomCode = searchParams?.get('room') || localStorage.getItem('private_room_code') || ''
       joinGame(user.display_name, `${user.id}`, roomCode)
       
@@ -32,14 +45,32 @@ function GamePageContent() {
         localStorage.removeItem('private_room_code')
       }
     }
-  }, [user, isLoading, gameStatus, joinGame, router, searchParams])
+  }, [user, isLoading, gameStatus, joinGame, rejoinGame, router, searchParams])
 
   // Show error state
   if (error && gameStatus === 'error') {
+    const showResume = error.includes('already in a game')
+    const handleResume = () => {
+      const storedGame = localStorage.getItem('export9_active_game')
+      if (storedGame && user) {
+        try {
+          const parsed = JSON.parse(storedGame)
+          if (parsed?.game_id && parsed?.player_id) {
+            requestRejoin(parsed.game_id, parsed.player_id, user.display_name, `${user.id}`)
+            return
+          }
+        } catch (error) {
+          localStorage.removeItem('export9_active_game')
+        }
+      }
+      router.push('/')
+    }
+
     return (
       <ErrorDisplay 
         error={error} 
-        onRetry={reconnect}
+        onRetry={showResume ? handleResume : reconnect}
+        retryLabel={showResume ? 'Resume Game' : undefined}
       />
     )
   }

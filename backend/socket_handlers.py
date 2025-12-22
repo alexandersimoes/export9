@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 
 # Global task for timeout checking
 _timeout_check_task = None
+_grace_tasks = {}
+
+GRACE_PERIOD_SECONDS = 30
 
 def stop_timeout_checking():
   """Stop the timeout checking background task"""
@@ -20,6 +23,106 @@ def stop_timeout_checking():
   if _timeout_check_task and not _timeout_check_task.done():
     _timeout_check_task.cancel()
     logger.info("Timeout checking task stopped")
+
+  for task in _grace_tasks.values():
+    if not task.done():
+      task.cancel()
+  _grace_tasks.clear()
+
+
+def _cancel_grace_task(player_id: str):
+  task = _grace_tasks.pop(player_id, None)
+  if task and not task.done():
+    task.cancel()
+
+
+def _build_game_state_payload(game, player):
+  current_round = game.rounds[game.current_round - 1] if game.current_round > 0 else None
+  pause_remaining = None
+  if game.state == GameState.PAUSED and game.pause_expires_at:
+    pause_remaining = max(0, int(game.pause_expires_at - time.time()))
+
+  return {
+      'game_id': game.id,
+      'state': game.state.value,
+      'current_round': game.current_round,
+      'total_rounds': len(game.rounds),
+      'current_product': {
+          'id': current_round.product.id,
+          'name': current_round.product.name,
+          'category': current_round.product.category
+      } if current_round else None,
+      'players': [{
+          'id': p.id,
+          'name': p.name,
+          'score': p.score,
+          'cards_remaining': len([c for c in p.cards if not c.is_played]),
+          'elo_rating': p.elo_rating,
+          'is_cpu': p.is_cpu,
+          'is_guest': p.is_guest,
+          'user_id': p.user_id
+      } for p in game.players],
+      'your_cards': [{'country_code': c.country.code, 'country_name': c.country.name}
+                     for c in player.cards if not c.is_played],
+      'is_paused': game.state == GameState.PAUSED,
+      'pause_reason': 'opponent_disconnected' if game.state == GameState.PAUSED else None,
+      'pause_remaining': pause_remaining
+  }
+
+
+async def _start_grace_period(sio: socketio.AsyncServer, game_manager: GameManager, game_id: str, disconnected_player_id: str, remaining_player_id: str):
+  game = game_manager.games.get(game_id)
+  if not game:
+    return
+
+  game.state = GameState.PAUSED
+  game.pause_expires_at = time.time() + GRACE_PERIOD_SECONDS
+  game.pending_pause = False
+  game.pending_disconnected_player_id = None
+  game.pending_remaining_player_id = None
+
+  await sio.emit('opponent_disconnected', {
+      'player_id': disconnected_player_id,
+      'grace_seconds': GRACE_PERIOD_SECONDS,
+      'pause_expires_at': game.pause_expires_at
+  }, room=f"game_{game_id}")
+
+  try:
+    await asyncio.sleep(GRACE_PERIOD_SECONDS)
+  except asyncio.CancelledError:
+    return
+
+  game = game_manager.games.get(game_id)
+  if not game:
+    return
+
+  disconnected_player = game.get_player_by_id(disconnected_player_id)
+  remaining_player = game.get_player_by_id(remaining_player_id)
+  if not disconnected_player or not remaining_player:
+    return
+
+  if disconnected_player.state == PlayerState.DISCONNECTED and game.state == GameState.PAUSED:
+    await handle_game_forfeit(sio, game_manager, game.id, disconnected_player.id, remaining_player.id)
+
+
+async def _cleanup_after_grace(game_manager: GameManager, game_id: str, player_id: str):
+  try:
+    await asyncio.sleep(GRACE_PERIOD_SECONDS)
+  except asyncio.CancelledError:
+    return
+
+  game = game_manager.games.get(game_id)
+  if not game:
+    return
+
+  still_disconnected = all(p.state == PlayerState.DISCONNECTED for p in game.players if not p.is_cpu)
+  if still_disconnected:
+    for player in game.players:
+      if player.id in game_manager.player_game_map:
+        del game_manager.player_game_map[player.id]
+    if game.id in game_manager.games:
+      del game_manager.games[game.id]
+    _cancel_grace_task(player_id)
 
 async def check_player_timeouts(sio: socketio.AsyncServer, game_manager: GameManager):
   """Background task to check for player timeouts in active games"""
@@ -138,7 +241,7 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
       
       # Check if player was in an active game
       game = game_manager.get_game_by_player(player.id)
-      if game and game.state == GameState.IN_PROGRESS:
+      if game and game.state in (GameState.IN_PROGRESS, GameState.PAUSED):
         logger.info(f"Player {player.name} disconnected from active game {game.id}")
         
         # Find the remaining player
@@ -149,16 +252,24 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
             break
         
         if remaining_player and not remaining_player.is_cpu:
-          # Award win to remaining player via forfeit - forfeit handler will manage cleanup
-          await handle_game_forfeit(sio, game_manager, game.id, player.id, remaining_player.id)
-          return  # Don't do additional cleanup, forfeit handler takes care of it
+          _cancel_grace_task(player.id)
+          current_round = game.rounds[game.current_round - 1] if game.current_round > 0 else None
+          if game.state == GameState.IN_PROGRESS and current_round and current_round.is_complete:
+            game.pending_pause = True
+            game.pending_disconnected_player_id = player.id
+            game.pending_remaining_player_id = remaining_player.id
+            return
+
+          _grace_tasks[player.id] = asyncio.create_task(
+              _start_grace_period(sio, game_manager, game.id, player.id, remaining_player.id)
+          )
+          return
         else:
-          # Just clean up the game if no valid remaining player
-          game_manager.remove_player(player.id)
-          await sio.emit('player_disconnected', {
-              'player_id': player.id,
-              'player_name': player.name
-          }, room=f"game_{game.id}")
+          _cancel_grace_task(player.id)
+          _grace_tasks[player.id] = asyncio.create_task(
+              _cleanup_after_grace(game_manager, game.id, player.id)
+          )
+          return
       else:
         # Normal disconnect handling for waiting players or finished games
         game_manager.remove_player(player.id)
@@ -224,6 +335,8 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
 
         # Check if user is already in an active game
         for game in game_manager.games.values():
+          if game.state == GameState.FINISHED:
+            continue
           for game_player in game.players:
             if getattr(game_player, 'user_id', None) == user_id:
               await sio.emit('error', {'message': 'You are already in a game'}, room=sid)
@@ -317,6 +430,66 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
     except Exception as e:
       logger.error(f"Error in join_game: {e}")
       await sio.emit('error', {'message': 'Failed to join game'}, room=sid)
+
+  @sio.event
+  async def rejoin_game(sid, data):
+    """Handle player rejoining an active game within grace period"""
+    try:
+      game_id = data.get('game_id')
+      player_id = data.get('player_id')
+      if not game_id or not player_id:
+        await sio.emit('error', {'message': 'Game ID and player ID are required'}, room=sid)
+        return
+
+      game = game_manager.games.get(game_id)
+      if not game:
+        await sio.emit('error', {'message': 'Game not found'}, room=sid)
+        return
+
+      player = game.get_player_by_id(player_id)
+      if not player:
+        await sio.emit('error', {'message': 'Player not found in game'}, room=sid)
+        return
+
+      player.socket_id = sid
+      player.state = PlayerState.IN_GAME
+      player.last_seen = time.time()
+
+      await sio.enter_room(sid, f"game_{game.id}")
+      _cancel_grace_task(player.id)
+
+      # If everyone is back, resume the game
+      all_active = all(p.is_cpu or p.state != PlayerState.DISCONNECTED for p in game.players)
+      if all_active and game.state == GameState.PAUSED:
+        game.state = GameState.IN_PROGRESS
+        game.pause_expires_at = None
+        await sio.emit('opponent_reconnected', {
+            'player_id': player.id,
+            'player_name': player.name
+        }, room=f"game_{game.id}")
+        # If the round already completed during the interstitial, advance now.
+        current_round = game.rounds[game.current_round - 1] if game.current_round > 0 else None
+        if current_round and current_round.is_complete:
+          if game.current_round >= len(game.rounds):
+            await end_game(sio, game_manager, game.id)
+          else:
+            await start_round(sio, game_manager, game.id, game.current_round + 1)
+      elif all_active and game.pending_pause:
+        game.pending_pause = False
+        game.pending_disconnected_player_id = None
+        game.pending_remaining_player_id = None
+        current_round = game.rounds[game.current_round - 1] if game.current_round > 0 else None
+        if current_round and current_round.is_complete:
+          if game.current_round >= len(game.rounds):
+            await end_game(sio, game_manager, game.id)
+          else:
+            await start_round(sio, game_manager, game.id, game.current_round + 1)
+
+      await sio.emit('game_state', _build_game_state_payload(game, player), room=sid)
+
+    except Exception as e:
+      logger.error(f"Error in rejoin_game: {e}")
+      await sio.emit('error', {'message': 'Failed to rejoin game'}, room=sid)
 
   @sio.event
   async def play_cpu(sid, data):
@@ -471,32 +644,7 @@ def register_socket_handlers(sio: socketio.AsyncServer, game_manager: GameManage
         await sio.emit('error', {'message': 'Game not found'}, room=sid)
         return
 
-      # Send current game state
-      current_round = game.rounds[game.current_round - 1] if game.current_round > 0 else None
-
-      await sio.emit('game_state', {
-          'game_id': game.id,
-          'state': game.state.value,
-          'current_round': game.current_round,
-          'total_rounds': len(game.rounds),
-          'current_product': {
-              'id': current_round.product.id,
-              'name': current_round.product.name,
-              'category': current_round.product.category
-          } if current_round else None,
-          'players': [{
-              'id': p.id,
-              'name': p.name,
-              'score': p.score,
-              'cards_remaining': len([c for c in p.cards if not c.is_played]),
-              'elo_rating': p.elo_rating,
-              'is_cpu': p.is_cpu,
-              'is_guest': p.is_guest,
-              'user_id': p.user_id
-          } for p in game.players],
-          'your_cards': [{'country_code': c.country.code, 'country_name': c.country.name}
-                         for c in player.cards if not c.is_played]
-      }, room=sid)
+      await sio.emit('game_state', _build_game_state_payload(game, player), room=sid)
 
     except Exception as e:
       logger.error(f"Error in get_game_state: {e}")
@@ -686,12 +834,24 @@ async def resolve_round(sio: socketio.AsyncServer, game_manager: GameManager, ga
     # Give players time to see final round results before ending game
     import asyncio
     await asyncio.sleep(5)
+    if game.pending_pause:
+      disconnected_id = game.pending_disconnected_player_id
+      remaining_id = game.pending_remaining_player_id
+      if disconnected_id and remaining_id:
+        await _start_grace_period(sio, game_manager, game_id, disconnected_id, remaining_id)
+      return
     if game.state == GameState.IN_PROGRESS:
       await end_game(sio, game_manager, game_id)
   else:
     # Start next round after showing results for 5 seconds
     import asyncio
     await asyncio.sleep(5)
+    if game.pending_pause:
+      disconnected_id = game.pending_disconnected_player_id
+      remaining_id = game.pending_remaining_player_id
+      if disconnected_id and remaining_id:
+        await _start_grace_period(sio, game_manager, game_id, disconnected_id, remaining_id)
+      return
     if game.state == GameState.IN_PROGRESS:
       await start_round(sio, game_manager, game_id, game.current_round + 1)
 
@@ -702,6 +862,16 @@ async def handle_game_forfeit(sio: socketio.AsyncServer, game_manager: GameManag
   game = game_manager.games.get(game_id)
   if not game:
     return
+
+  _cancel_grace_task(forfeiting_player_id)
+  game.pause_expires_at = None
+  game.state = GameState.FINISHED
+  game.winner_id = winning_player_id
+
+  # Remove players from active game map immediately so they can re-queue.
+  for player in game.players:
+    if player.id in game_manager.player_game_map:
+      del game_manager.player_game_map[player.id]
   
   logger.info(f"Handling forfeit in game {game_id}: {forfeiting_player_id} forfeited, {winning_player_id} wins")
   
@@ -784,10 +954,11 @@ async def handle_game_forfeit(sio: socketio.AsyncServer, game_manager: GameManag
   # Give a small delay to ensure notification is received before changing game state
   import asyncio
   await asyncio.sleep(0.1)
-  
-  # Set game as finished after notification
-  game.state = GameState.FINISHED
-  game.winner_id = winning_player_id
+
+  # Remove players from active game map immediately so they can re-queue.
+  for player in game.players:
+    if player.id in game_manager.player_game_map:
+      del game_manager.player_game_map[player.id]
   
   # Record game result with forfeit via internal API call (only for database users)
   if winning_user_id and forfeiting_user_id:
@@ -824,10 +995,6 @@ async def handle_game_forfeit(sio: socketio.AsyncServer, game_manager: GameManag
   import asyncio
   await asyncio.sleep(10)
   if game_id in game_manager.games:
-    # Remove players from player_game_map
-    for player in game.players:
-      if player.id in game_manager.player_game_map:
-        del game_manager.player_game_map[player.id]
     # Remove game
     del game_manager.games[game_id]
     logger.info(f"Cleaned up forfeited game {game_id}")
@@ -839,6 +1006,7 @@ async def end_game(sio: socketio.AsyncServer, game_manager: GameManager, game_id
   if not game:
     return
 
+  game.pause_expires_at = None
   game.state = GameState.FINISHED
 
   # Determine overall winner
@@ -859,14 +1027,15 @@ async def end_game(sio: socketio.AsyncServer, game_manager: GameManager, game_id
       } for p in game.players]
   }, room=f"game_{game_id}")
 
+  # Remove players from active game map immediately so they can re-queue.
+  for player in game.players:
+    if player.id in game_manager.player_game_map:
+      del game_manager.player_game_map[player.id]
+
   # Clean up game after a delay
   import asyncio
   await asyncio.sleep(10)
   if game_id in game_manager.games:
-    # Remove players from player_game_map
-    for player in game.players:
-      if player.id in game_manager.player_game_map:
-        del game_manager.player_game_map[player.id]
     # Remove game
     del game_manager.games[game_id]
     logger.info(f"Cleaned up completed game {game_id}")

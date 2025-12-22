@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation'
 interface ErrorDisplayProps {
   error: string
   onRetry?: () => void
+  retryLabel?: string
 }
 
-export default function ErrorDisplay({ error, onRetry }: ErrorDisplayProps) {
+export default function ErrorDisplay({ error, onRetry, retryLabel }: ErrorDisplayProps) {
   const router = useRouter()
 
   return (
@@ -27,7 +28,7 @@ export default function ErrorDisplay({ error, onRetry }: ErrorDisplayProps) {
                 onClick={onRetry}
                 className="w-full btn-primary"
               >
-                Try Again
+                {retryLabel || 'Try Again'}
               </button>
             )}
             

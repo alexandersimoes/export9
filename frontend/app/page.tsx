@@ -15,7 +15,9 @@ function HomeContent() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showPrivateRoomModal, setShowPrivateRoomModal] = useState(false)
   const [activePlayers, setActivePlayers] = useState<number | null>(null)
+  const [resumeGame, setResumeGame] = useState<{ gameId: string; playerId: string } | null>(null)
   const router = useRouter()
+  const resumeExpiryMs = 36000
 
   // Check for room query parameter and redirect
   useEffect(() => {
@@ -35,6 +37,45 @@ function HomeContent() {
       setShowOnboarding(true)
     }
   }, [user, isLoading])
+
+  const syncResumeGame = () => {
+    if (!user) {
+      setResumeGame(null)
+      return
+    }
+
+    const storedGame = localStorage.getItem('export9_active_game')
+    if (!storedGame) {
+      setResumeGame(null)
+      return
+    }
+
+    try {
+      const parsed = JSON.parse(storedGame)
+      const updatedAt = Number(parsed?.updated_at || 0)
+      const isFresh = updatedAt > 0 && (Date.now() - updatedAt) <= resumeExpiryMs
+      if (parsed?.user_id === `${user.id}` && parsed?.game_id && parsed?.player_id && isFresh) {
+        setResumeGame({ gameId: parsed.game_id, playerId: parsed.player_id })
+      } else {
+        if (!isFresh) {
+          localStorage.removeItem('export9_active_game')
+          refreshUser()
+        }
+        setResumeGame(null)
+      }
+    } catch (error) {
+      setResumeGame(null)
+    }
+  }
+
+  useEffect(() => {
+    syncResumeGame()
+  }, [user])
+
+  useEffect(() => {
+    const intervalId = setInterval(syncResumeGame, 1000)
+    return () => clearInterval(intervalId)
+  }, [user])
 
   useEffect(() => {
     let isMounted = true
@@ -112,6 +153,16 @@ function HomeContent() {
               <span className="text-xs font-semibold text-poker-dark-text">{activePlayers} playing</span>
             </div>
           )}
+          {resumeGame && (
+            <div className="absolute top-3 left-3">
+              <button
+                onClick={() => router.push('/game')}
+                className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-poker-dark-text shadow-sm hover:bg-white"
+              >
+                Resume game
+              </button>
+            </div>
+          )}
           <div className="text-center mb-8">
             {/* Logo */}
             <div className="flex justify-center mb-3">
@@ -135,13 +186,23 @@ function HomeContent() {
           )}
           
           <div className="space-y-4">
-            <button
-              onClick={handleJoinGame}
-              disabled={!user}
-              className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {user ? '🎯 Find Match' : 'Loading...'}
-            </button>
+            {resumeGame ? (
+              <button
+                onClick={() => router.push('/game')}
+                className="w-full btn-primary animate-pulse"
+                style={{ animationDuration: '0.6s' }}
+              >
+                🔁 Resume Game
+              </button>
+            ) : (
+              <button
+                onClick={handleJoinGame}
+                disabled={!user}
+                className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {user ? '🎯 Find Match' : 'Loading...'}
+              </button>
+            )}
 
             {user && (
               <button

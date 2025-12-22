@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 class GameState(Enum):
   WAITING = "waiting"
   IN_PROGRESS = "in_progress"
+  PAUSED = "paused"
   FINISHED = "finished"
 
 
@@ -93,6 +94,10 @@ class Game:
   rounds: List[GameRound] = field(default_factory=list)
   winner_id: Optional[str] = None
   created_at: float = field(default_factory=time.time)
+  pause_expires_at: Optional[float] = None
+  pending_pause: bool = False
+  pending_disconnected_player_id: Optional[str] = None
+  pending_remaining_player_id: Optional[str] = None
 
   def __post_init__(self):
     if not self.rounds:

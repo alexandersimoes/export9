@@ -36,6 +36,7 @@ export default function GameBoard({
   const [showQuitDialog, setShowQuitDialog] = useState(false)
   const router = useRouter()
   const { user } = useUser()
+  const isPaused = !!gameState.is_paused
 
   const handleLogoClick = () => {
     setShowQuitDialog(true)
@@ -48,7 +49,7 @@ export default function GameBoard({
   }
 
   const handleCardSelect = (countryCode: string) => {
-    if (gameStatus === 'playing' && !hasSubmitted && timeLeft > 0) {
+    if (gameStatus === 'playing' && !hasSubmitted && timeLeft > 0 && !isPaused) {
       // Verify the card is actually available
       const cardExists = gameState.your_cards.some(card => card.country_code === countryCode)
       if (cardExists) {
@@ -61,7 +62,7 @@ export default function GameBoard({
   }
 
   const handleSubmitCard = () => {
-    if (selectedCard && !hasSubmitted) {
+    if (selectedCard && !hasSubmitted && !isPaused) {
       // Verify the card is still available before submitting
       const cardExists = gameState.your_cards.some(card => card.country_code === selectedCard)
       if (cardExists) {
@@ -76,7 +77,7 @@ export default function GameBoard({
   }
 
   const handleAutoSubmit = () => {
-    if (hasSubmitted || gameStatus !== 'playing') return
+    if (hasSubmitted || gameStatus !== 'playing' || isPaused) return
     
     // Auto-submit the selected card if it's still valid, or first available card
     let cardToPlay = null
@@ -154,7 +155,7 @@ export default function GameBoard({
 
   // Countdown timer
   React.useEffect(() => {
-    if (gameStatus !== 'playing' || hasSubmitted || timeLeft <= 0) return
+    if (gameStatus !== 'playing' || hasSubmitted || timeLeft <= 0 || isPaused) return
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -238,6 +239,17 @@ export default function GameBoard({
               You're playing against <strong>{opponent?.name}</strong>
             </p>
             <p className="text-sm text-green-600 mt-2">Get ready for the first round...</p>
+          </div>
+        </div>
+      )}
+
+      {isPaused && (
+        <div className="card mb-4 bg-yellow-50 border-yellow-200">
+          <div className="text-center text-yellow-900">
+            <strong>Opponent disconnected.</strong>{' '}
+            {gameState.pause_remaining !== null && gameState.pause_remaining !== undefined
+              ? `Waiting ${gameState.pause_remaining}s for them to return.`
+              : 'Waiting for them to return.'}
           </div>
         </div>
       )}
